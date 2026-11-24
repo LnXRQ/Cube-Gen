@@ -1,5 +1,5 @@
 // Offline: App, Draft-Motor und Kartenbilder kommen aus dem Speicher des iPhones.
-const VERSION = "20261124-090241";            // bauen.py setzt die Version ein
+const VERSION = "20261124-092050";            // bauen.py setzt die Version ein
 const APP = "app-" + VERSION;
 const BILDER = "karten-bilder-v1";        // gleicher Name wie in app.js – Bilder überleben Updates
 const DATEIEN = ["./", "index.html", "app.css", "app.js", "motor.js", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png", "fonts/alegreya-sans-400.woff2", "fonts/alegreya-sans-700.woff2", "fonts/alegreya-sans-800.woff2", "fonts/uncial-antiqua-400.woff2", "py/cubegen.json", "pyodide/pyodide.js", "pyodide/pyodide.asm.js", "pyodide/pyodide.asm.wasm", "pyodide/python_stdlib.zip", "pyodide/pyodide-lock.json"];

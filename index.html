@@ -26,8 +26,12 @@
       </button>
     </header>
     <h1 class="titel">Draften</h1>
+    <button type="button" class="db-chip" id="db_chip"></button>
     <div class="cubes" id="cubes"></div>
-    <button type="button" class="neu-cube" id="cube_laden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cube laden</button>
+    <div class="zwei-knoepfe">
+      <button type="button" class="neu-cube" id="cube_bauen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12M21 7l-9 5-9-5"/></svg>Cube bauen</button>
+      <button type="button" class="neu-cube" id="cube_laden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cube laden</button>
+    </div>
     <div id="laufend"></div>
     <div class="fuss">
       <p class="netz" id="netz"></p>
@@ -76,7 +80,7 @@
 
 <!-- Unterseite (Cube laden, Tisch, Pool) -->
 <div class="schleier" id="schleier" hidden></div>
-<div class="blatt" id="blatt" role="dialog" aria-modal="true" hidden><div class="griff" aria-hidden="true"></div><div id="blatt_inhalt"></div></div>
+<div class="blatt" id="blatt" role="dialog" aria-modal="true" hidden><div class="griff" aria-hidden="true"></div><button type="button" class="blatt-zu" id="blatt_zu" aria-label="Schließen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div id="blatt_inhalt"></div></div>
 <div class="zoom" id="zoom" hidden></div>
 <div class="hinweis" id="hinweis" role="status" aria-live="polite" hidden></div>
 <input type="file" id="datei" accept=".json,.txt,.csv,application/json,text/plain,text/csv" hidden>

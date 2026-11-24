@@ -23,10 +23,13 @@ const ICON = {
 
 // ================================================================ Speicher auf dem iPhone (IndexedDB)
 const DB = await new Promise((ok, nein) => {
-  const r = indexedDB.open("cubegen-handy", 1);
+  const r = indexedDB.open("cubegen-handy", 2);
   r.onupgradeneeded = () => {
-    r.result.createObjectStore("cubes", {keyPath: "id"});
-    r.result.createObjectStore("drafts", {keyPath: "id"});
+    const namen = r.result.objectStoreNames;
+    if (!namen.contains("cubes")) r.result.createObjectStore("cubes", {keyPath: "id"});
+    if (!namen.contains("drafts")) r.result.createObjectStore("drafts", {keyPath: "id"});
+    if (!namen.contains("karten")) r.result.createObjectStore("karten", {keyPath: "key"});     // alle Karten
+    if (!namen.contains("meta")) r.result.createObjectStore("meta", {keyPath: "id"});
   };
   r.onsuccess = () => ok(r.result);
   r.onerror = () => nein(r.error);
@@ -40,6 +43,7 @@ function speicher(store, modus, fn) {
   });
 }
 const alle = store => speicher(store, "readonly", s => s.getAll());
+const hole = (store, id) => speicher(store, "readonly", s => s.get(id));
 const lege = (store, obj) => speicher(store, "readwrite", s => s.put(obj));
 const loesche = (store, id) => speicher(store, "readwrite", s => s.delete(id));
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
@@ -59,7 +63,9 @@ let motorBereit = false;
 rufe("bereit").then(() => { motorBereit = true; }).catch(e => hinweis("Draft-Motor startet nicht: " + e.message, 6000));
 
 // ================================================================ Zustand und kleine Helfer
-const S = {cubes: [], drafts: [], wahl: null, z: null, a: null, draftId: null, auswahl: [], laedt: new Map(), D: null, ansicht: "start"};
+const S = {cubes: [], drafts: [], wahl: null, z: null, a: null, draftId: null, auswahl: [], laedt: new Map(), D: null, ansicht: "start",
+  db: null, dbLaedt: null};
+const zahl = n => Number(n || 0).toLocaleString("de-DE");
 const norm = n => String(n || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[’`]/g, "'").toLowerCase().trim();
 const vorne = n => String(n || "").split(" // ")[0];
 let hinweisUhr = null;
@@ -79,6 +85,7 @@ function blatt(html) {
 }
 function blattZu() { $("#blatt").hidden = $("#schleier").hidden = true; $("#blatt_inhalt").innerHTML = ""; }
 $("#schleier").onclick = blattZu;
+$("#blatt_zu").onclick = blattZu;
 const pipsHtml = farben => `<span class="pips">${[...(farben || "")].filter(c => FARBEN[c]).map(c => `<i style="background:${FARBEN[c]}"></i>`).join("")}</span>`;
 
 function karteHtml(k, klasse = "", extra = "") {
@@ -111,6 +118,7 @@ $("#zoom").onclick = () => { $("#zoom").hidden = true; };
 
 // ================================================================ Start
 async function ladeAlles() {
+  try { S.db = (await hole("meta", "karten")) || null; } catch (e) { S.db = null; }
   S.cubes = (await alle("cubes")).sort((a, b) => (b.zeit_geladen || 0) - (a.zeit_geladen || 0));
   S.drafts = (await alle("drafts")).sort((a, b) => b.aktualisiert - a.aktualisiert);
   if (!S.cubes.some(c => c.id === S.wahl)) S.wahl = (S.cubes[0] || {}).id || null;
@@ -131,7 +139,7 @@ function zeichneStart() {
       <span class="cube-text"><b>${esc(c.name)}</b><span>${cubeInfo(c)}</span></span>
       <span class="cube-status ${komplett ? "ok" : ""}" title="${komplett ? "offline bereit" : "Bilder fehlen noch"}">${S.laedt.has(c.id) ? "" : komplett ? ICON.ok : ICON.laden}</span>
       <button type="button" class="cube-mehr" data-menue="${esc(c.id)}" aria-label="Mehr zu ${esc(c.name)}">${ICON.mehr}</button></div>`;
-  }).join("") : `<p class="klein-text">Noch kein Cube auf dem iPhone. Tippe auf „Cube laden“.</p>`;
+  }).join("") : `<p class="klein-text">Noch kein Cube auf dem iPhone – bau einen oder lade einen.</p>`;
   const offen = S.drafts.slice(0, 8);
   $("#laufend").innerHTML = offen.length ? `<p class="abschnitt">Deine Drafts</p><div class="drafts">${offen.map(d => `
     <div class="draft-zeile" data-draft="${esc(d.id)}" role="button" tabindex="0">
@@ -142,7 +150,15 @@ function zeichneStart() {
   $("#sync_zahl").hidden = !neu; $("#sync_zahl").textContent = neu;
   const c = S.cubes.find(x => x.id === S.wahl);
   $("#los").disabled = !c || S.laedt.has(c.id);
+  zeichneDbChip();
   zeichneNetz();
+}
+function zeichneDbChip() {
+  const ch = $("#db_chip"), l = S.dbLaedt;
+  ch.classList.toggle("fehlt", !S.db && !l);
+  ch.innerHTML = l ? `${ICON.laden}<span>${esc(l.text)}</span>`
+    : S.db ? `${ICON.paket}<span><b>${zahl(S.db.anzahl)}</b> Karten · ${S.db.quelle === "pc" ? "vom PC" : "Scryfall"} · ${new Date(S.db.stand * 1000).toLocaleDateString("de-DE", {day: "2-digit", month: "2-digit"})}</span>`
+    : `${ICON.laden}<span>Alle Karten aufs iPhone laden</span>`;
 }
 let offlineBereit = false;
 function zeichneNetz() {
@@ -188,7 +204,7 @@ function cubeMenue(c) {
 // ================================================================ Cube laden: mitgeliefert, aus Dateien oder als Liste
 $("#cube_laden").onclick = async () => {
   const box = blatt(`<h2>Cube laden</h2>
-    <button type="button" class="quelle" id="q_datei">${ICON.datei}<span><b>Aus Dateien</b><small>vom PC (Ordner „handy“) oder eine Kartenliste</small></span></button>
+    <button type="button" class="quelle" id="q_datei">${ICON.datei}<span><b>Aus Dateien</b><small>Cube oder alle Karten vom PC (Ordner „handy“), oder eine Kartenliste</small></span></button>
     <p class="abschnitt">Mitgeliefert</p><div id="q_liste"><div class="lade"><i></i></div></div>`);
   box.querySelector("#q_datei").onclick = () => $("#datei").click();
   let liste = [];
@@ -213,7 +229,8 @@ $("#datei").onchange = async ev => {
   if (/\.json$/i.test(f.name)) {
     let p;
     try { p = JSON.parse(text); } catch (e) { return hinweis("Die Datei ist kein gültiges JSON.", 5000); }
-    if (p.art !== "cubegen-cube") return hinweis("Das ist keine Cube-Datei vom Generator.", 5000);
+    if (p.art === "cubegen-karten") return dbVomPc(p);
+    if (p.art !== "cubegen-cube") return hinweis("Das ist keine Datei vom Generator.", 5000);
     return aufnehmen(p);
   }
   listeAufnehmen(f.name.replace(/\.(txt|csv)$/i, ""), text);
@@ -260,7 +277,14 @@ async function aufnehmen(p) {
   S.wahl = id;
   try {
     let karten = p.karten || [];
-    if (p.namen && p.namen.length) {
+    if (p.namen && p.namen.length && S.db) {
+      status("Suche die Karten …", 1, 2);
+      await dbImMotor();
+      const r = await rufe("aus_liste", {namen: p.namen, format: p.format});
+      const bekannt = Object.fromEntries((p.karten || []).map(k => [k.name, k]));
+      karten = r.karten.map(k => bekannt[k.name] ? {...bekannt[k.name], id: k.id} : k);
+      if (r.unbekannt.length) hinweis(`${r.unbekannt.length} Karten nicht gefunden: ${r.unbekannt.slice(0, 4).join(", ")}${r.unbekannt.length > 4 ? " …" : ""}`, 6000);
+    } else if (p.namen && p.namen.length) {
       status("Kartendaten von Scryfall …", 0, p.namen.length);
       karten = await ausScryfall(p, (w, g) => status("Kartendaten von Scryfall …", w, g));
     }
@@ -342,6 +366,123 @@ async function bilderLaden(c) {
   await ladeAlles();
   if (S.ansicht === "start") zeichneStart();
   if (fehlen.length && da >= urls.length) hinweis(`„${c.name}“ ist offline bereit.`);
+}
+
+// ================================================================ Alle Karten: von Scryfall oder vom PC
+const DB_SUCHE = "game:paper -is:funny -t:basic -t:token";
+let motorDb = null;                       // Promise: der Motor kennt alle Karten
+function dbImMotor(neu) {
+  if (neu) motorDb = null;
+  if (!motorDb) motorDb = (async () => {
+    const zeilen = await alle("karten");
+    if (!zeilen.length) throw new Error("Erst alle Karten laden.");
+    await rufe("db_setzen", {zeilen, listen: (S.db && S.db.listen) || {}});
+    return zeilen.length;
+  })().catch(e => { motorDb = null; throw e; });
+  return motorDb;
+}
+async function dbSpeichern(zeilen, meta) {
+  await speicher("karten", "readwrite", s => { s.clear(); for (const z of zeilen) s.put(z); });
+  await lege("meta", {id: "karten", anzahl: zeilen.length, ...meta});
+  S.db = await hole("meta", "karten");
+  motorDb = rufe("db_setzen", {zeilen, listen: meta.listen || {}}).then(() => zeilen.length).catch(e => { motorDb = null; throw e; });
+}
+function dbStatus(text, wert = 0, gesamt = 0) {
+  S.dbLaedt = text ? {text, wert, gesamt} : null;
+  if (S.ansicht === "start") zeichneDbChip();
+  const b = $("#db_balken");
+  if (b) { b.hidden = !text; b.firstElementChild.style.width = `${gesamt ? Math.round(100 * wert / gesamt) : 8}%`; $("#db_text").textContent = text || ""; }
+}
+async function dbVonScryfall() {
+  if (S.dbLaedt) return;
+  if (!navigator.onLine) return hinweis("Dafür brauchst du Internet, am besten WLAN.", 4000);
+  let url = SCRYFALL + "/cards/search?" + new URLSearchParams({q: DB_SUCHE, unique: "cards", order: "name"});
+  const zeilen = [];
+  let gesamt = 0, geladen = 0;
+  try {
+    dbStatus("Alle Karten von Scryfall …");
+    while (url) {
+      let r;
+      for (let versuch = 0; versuch < 3; versuch++) {
+        r = await fetch(url, {headers: {"Accept": "application/json"}}).catch(() => null);
+        if (r && r.ok) break;
+        await pause(1500 * (versuch + 1));
+      }
+      if (!r || !r.ok) throw new Error("Scryfall antwortet nicht – später nochmal versuchen.");
+      const j = await r.json();
+      gesamt = j.total_cards || gesamt;
+      zeilen.push(...await rufe("db_scryfall", {karten: j.data || []}));
+      geladen += (j.data || []).length;
+      dbStatus(`Alle Karten: ${zahl(geladen)} von ${zahl(gesamt)} …`, geladen, gesamt);
+      url = j.has_more ? j.next_page : null;
+      await pause(110);                            // Scryfall: höchstens 10 Anfragen pro Sekunde
+    }
+    dbStatus("Speichere …", 1, 1);
+    await dbSpeichern(zeilen, {quelle: "scryfall", stand: Date.now() / 1000, listen: {}});
+    dbStatus(null);
+    zeichneStart();
+    hinweis(`${zahl(zeilen.length)} Karten auf dem iPhone.`);
+  } catch (e) { dbStatus(null); hinweis(e.message, 6000); }
+}
+async function dbVomPc(d) {
+  if (!Array.isArray(d.zeilen) || !d.zeilen.length) return hinweis("Die Datei enthält keine Karten.", 4000);
+  dbStatus("Übernehme die Karten vom PC …", 1, 2);
+  try {
+    await dbSpeichern(d.zeilen, {quelle: "pc", stand: d.stand || Date.now() / 1000, listen: d.listen || {}});
+    dbStatus(null); zeichneStart();
+    hinweis(`${zahl(d.zeilen.length)} Karten vom PC übernommen.`);
+  } catch (e) { dbStatus(null); hinweis(e.message, 6000); }
+}
+function dbMenue() {
+  const d = S.db;
+  const box = blatt(`<h2>Alle Karten</h2>
+    <p class="klein-text">${d ? `${zahl(d.anzahl)} Karten ${d.quelle === "pc" ? "vom PC – mit Elo, Vorbild-Cubes und deinen Picks" : "von Scryfall – Werte aus dem EDHREC-Rang"}, Stand ${new Date(d.stand * 1000).toLocaleDateString("de-DE")}.`
+      : "Damit kannst du auf dem iPhone jeden Cube bauen und draften – auch ohne PC und ohne Netz."}</p>
+    <div class="balken-gross" id="db_balken" ${S.dbLaedt ? "" : "hidden"}><i style="width:8%"></i></div><p class="klein-text" id="db_text">${esc((S.dbLaedt || {}).text || "")}</p>
+    <button type="button" class="quelle" id="db_pc">${ICON.datei}<span><b>Vom PC</b><small>Generator › Draften › „Alle Karten aufs iPhone“, dann hier die Datei aus OneDrive › Cube Gen › handy wählen. Am genauesten.</small></span></button>
+    <button type="button" class="quelle" id="db_sf" ${S.dbLaedt ? "disabled" : ""}>${ICON.laden}<span><b>Von Scryfall laden</b><small>ohne PC, im WLAN: etwa 150 MB, ein paar Minuten</small></span></button>`);
+  box.querySelector("#db_pc").onclick = () => $("#datei").click();
+  box.querySelector("#db_sf").onclick = ev => { ev.currentTarget.disabled = true; dbVonScryfall(); };
+  if (S.dbLaedt) dbStatus(S.dbLaedt.text, S.dbLaedt.wert, S.dbLaedt.gesamt);
+}
+$("#db_chip").onclick = dbMenue;
+
+// ================================================================ Cube bauen – derselbe Generator wie am PC
+const B = {name: "", format: "commander", stufe: "mittel", spieler: 8};
+const STUFEN = [["gemuetlich", "Gemütlich", 1], ["mittel", "Mittel", 2], ["hoch", "Hoch", 3], ["vintage", "Vintage", 4]];
+const FLAMME = `<svg viewBox="0 0 14 20" aria-hidden="true"><path d="M7 0c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-3-1-6 1-9z"/></svg>`;
+$("#cube_bauen").onclick = () => {
+  if (!S.db) return dbMenue();
+  zeichneBauen();
+};
+function zeichneBauen() {
+  const box = blatt(`<h2>Cube bauen</h2>
+    <div class="feld"><label for="b_name">Name</label><input id="b_name" value="${esc(B.name)}" placeholder="Neuer Cube"></div>
+    <div class="feld"><label>Format</label><div class="segmente">${[["commander", "Commander"], ["vintage", "Vintage"]].map(([v, t]) => `<button type="button" data-fmt="${v}" aria-pressed="${B.format === v}">${t}</button>`).join("")}</div></div>
+    <div class="feld"><label>Stärke</label><div class="stufen">${STUFEN.map(([v, t, n]) => `<button type="button" data-stufe="${v}" aria-pressed="${B.stufe === v}"><span class="flammen">${[1, 2, 3, 4].map(i => FLAMME.replace("<svg", `<svg class="${i <= n ? "an" : ""}"`)).join("")}</span>${t}</button>`).join("")}</div></div>
+    <div class="zeile"><span>Spieler</span><span class="stepper"><button type="button" data-sp="-1" aria-label="weniger">−</button><output>${B.spieler} · ${B.spieler * 3 * (B.format === "commander" ? 20 : 15)} Karten</output><button type="button" data-sp="1" aria-label="mehr">+</button></span></div>
+    <button type="button" class="gross" id="b_los">Cube bauen</button>
+    <p class="klein-text" id="b_info">Dauert auf dem iPhone bis zu einer Minute.</p>`);
+  const name = () => { B.name = box.querySelector("#b_name").value.trim(); };
+  box.querySelectorAll("[data-fmt]").forEach(b => b.onclick = () => { name(); B.format = b.dataset.fmt; if (B.format === "vintage") B.stufe = "vintage"; else if (B.stufe === "vintage") B.stufe = "mittel"; zeichneBauen(); });
+  box.querySelectorAll("[data-stufe]").forEach(b => b.onclick = () => { name(); B.stufe = b.dataset.stufe; zeichneBauen(); });
+  box.querySelectorAll("[data-sp]").forEach(b => b.onclick = () => { name(); B.spieler = Math.max(2, Math.min(12, B.spieler + +b.dataset.sp)); zeichneBauen(); });
+  box.querySelector("#b_los").onclick = async ev => {
+    name();
+    const knopf = ev.currentTarget; knopf.disabled = true;
+    try {
+      knopf.textContent = "Lade alle Karten …";
+      await dbImMotor();
+      knopf.textContent = "Generator rechnet …";
+      const o = {name: B.name || "Neuer Cube", format: B.format, powerstufe: B.stufe, spieler: B.spieler, booster_pro_spieler: 3,
+        booster_groesse: B.format === "commander" ? 20 : 15, seed: 1 + Math.floor(Math.random() * 99999)};
+      const p = await rufe("cube_bauen", {optionen: o});
+      blattZu();
+      hinweis(`„${p.name}“ gebaut: ${p.karten.length} Karten${p.statistik && p.statistik.themen && p.statistik.themen.length ? ", Themen " + p.statistik.themen.join(", ") : ""}.`, 4000);
+      B.name = "";
+      aufnehmen(p);
+    } catch (e) { knopf.disabled = false; knopf.textContent = "Cube bauen"; const i = $("#b_info"); if (i) { i.className = "fehler-text"; i.textContent = e.message; } }
+  };
 }
 
 // ================================================================ Draft starten: der Tisch

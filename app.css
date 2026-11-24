@@ -53,6 +53,22 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
 .cube-mehr svg{width:22px;height:22px}
 .neu-cube{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:14px;border:1px dashed var(--eis-matt);background:transparent;color:var(--eis-hell);font-size:17px}
 .neu-cube svg{width:20px;height:20px}
+.zwei-knoepfe{display:flex;gap:10px;flex:none}
+.zwei-knoepfe .neu-cube{flex:1}
+#cube_bauen{border-style:solid;border-color:rgba(255,181,71,.6);color:var(--glut-hell);background:rgba(255,181,71,.08)}
+.db-chip{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;min-height:34px;margin-top:-6px;padding:0 12px;border-radius:999px;
+  border:1px solid var(--eis-hauch);background:rgba(3,12,17,.55);color:var(--asche);font-size:14px;flex:none}
+.db-chip b{color:var(--text);font-weight:700}
+.db-chip.fehlt{border-color:rgba(255,181,71,.55);color:var(--glut-hell)}
+.db-chip svg{width:16px;height:16px}
+.balken-gross{height:8px;border-radius:4px;background:var(--eis-hauch);overflow:hidden}
+.balken-gross i{display:block;height:100%;background:var(--glut);transition:width .3s}
+.stufen{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.stufen button{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:62px;border-radius:12px;border:1px solid var(--eis-matt);background:rgba(3,12,17,.6)}
+.stufen button[aria-pressed="true"]{border-color:var(--glut);background:rgba(255,181,71,.14);color:var(--glut-hell)}
+.flammen{display:flex;gap:2px}
+.flammen svg{width:12px;height:17px;fill:rgba(138,163,173,.35);stroke:none}
+.flammen svg.an{fill:var(--glut)}
 #laufend:empty{display:none}
 .abschnitt{font:700 12px/1 var(--ui);letter-spacing:.16em;text-transform:uppercase;color:var(--asche);margin:6px 2px 8px}
 .drafts{display:flex;flex-direction:column;gap:8px}
@@ -132,6 +148,9 @@ svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-l
   background:linear-gradient(180deg,#0b2730,#050f14);box-shadow:0 -12px 40px rgba(0,0,0,.6);animation:hoch .25s ease-out}
 @keyframes hoch{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 .griff{width:42px;height:5px;border-radius:3px;background:var(--eis-matt);margin:0 auto 4px;flex:none}
+.blatt-zu{position:absolute;top:12px;right:max(12px,env(safe-area-inset-right,0px));width:38px;height:38px;border-radius:50%;border:1px solid var(--eis-hauch);background:rgba(3,12,17,.6);color:var(--asche);display:grid;place-items:center;padding:0;z-index:1}
+.blatt-zu svg{width:18px;height:18px}
+.blatt h2{padding-right:44px}
 #blatt_inhalt{overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:14px}
 .blatt h2{margin:0;font:400 24px/1.1 var(--zier);color:#fff}
 .blatt .zeile{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:6px 6px 6px 14px;border-radius:12px;border:1px solid var(--eis-hauch);background:rgba(3,12,17,.6)}

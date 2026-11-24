@@ -18,10 +18,27 @@ from cubegen import draft, handy
 def _aus(z, **extra):
     return json.dumps({"z": json.dumps(z, ensure_ascii=False), "a": draft.ansicht(z), **extra}, ensure_ascii=False)
 
+BESTAND = None      # alle Karten der App, einmal je Sitzung geladen
+
 def aufruf(op, roh):
+    global BESTAND
     d = json.loads(roh)
     if op == "bereit":
-        return json.dumps({"ok": True})
+        return json.dumps({"ok": True, "bestand": len(BESTAND.zeilen) if BESTAND else 0})
+    if op == "db_setzen":
+        BESTAND = handy.Bestand(d["zeilen"], d.get("listen"))
+        return json.dumps({"anzahl": len(BESTAND.zeilen)})
+    if op == "db_scryfall":
+        return json.dumps(handy.zeilen_aus_scryfall(d["karten"]), ensure_ascii=False)
+    if op == "cube_bauen":
+        if not BESTAND:
+            raise ValueError("Erst alle Karten laden.")
+        return json.dumps(BESTAND.cube(d["optionen"]), ensure_ascii=False)
+    if op == "aus_liste":
+        if not BESTAND:
+            raise ValueError("Erst alle Karten laden.")
+        karten, unbekannt = BESTAND.draft_karten(d["namen"], d["format"])
+        return json.dumps({"karten": karten, "unbekannt": unbekannt}, ensure_ascii=False)
     if op == "aus_scryfall":
         return json.dumps(handy.aus_scryfall(d["karten"], d["format"], d.get("bekannt")), ensure_ascii=False)
     if op == "neu":
