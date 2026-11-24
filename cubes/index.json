@@ -1,11 +1,11 @@
 [
  {
-  "id": "mein-cube-commander",
-  "datei": "mein-cube-commander.cube.json",
+  "id": "mein-cube-commander-20261124",
+  "datei": "mein-cube-commander-20261124.cube.json",
   "name": "Mein Cube",
   "format": "commander",
   "karten": 480,
-  "info": "vom 31.10."
+  "info": "vom 24.11."
  },
  {
   "id": "mein-cube-vintage",
@@ -30,5 +30,12 @@
   "format": "vintage",
   "karten": 540,
   "info": "gedruckt"
+ },
+ {
+  "art": "karten",
+  "datei": "alle-karten.karten.json",
+  "stand": 1795524476.0570366,
+  "karten": 32460,
+  "mb": 27
  }
 ]

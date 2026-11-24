@@ -208,7 +208,7 @@ $("#cube_laden").onclick = async () => {
     <p class="abschnitt">Mitgeliefert</p><div id="q_liste"><div class="lade"><i></i></div></div>`);
   box.querySelector("#q_datei").onclick = () => $("#datei").click();
   let liste = [];
-  try { liste = await (await fetch("cubes/index.json", {cache: "no-cache"})).json(); } catch (e) {}
+  try { liste = (await (await fetch("cubes/index.json", {cache: "no-cache"})).json()).filter(x => x.art !== "karten"); } catch (e) {}
   const ziel = box.querySelector("#q_liste");
   if (!ziel) return;
   ziel.innerHTML = liste.length ? liste.map((x, i) => `<button type="button" class="quelle" data-mit="${i}" ${S.cubes.some(c => c.id === x.id) ? "disabled" : ""}>
@@ -470,9 +470,23 @@ function dbMenue() {
     <p class="klein-text">${d ? `${zahl(d.anzahl)} Karten ${d.quelle === "pc" ? "vom PC – mit Elo, Vorbild-Cubes und deinen Picks" : "von Scryfall – Werte aus dem EDHREC-Rang"}, Stand ${new Date(d.stand * 1000).toLocaleDateString("de-DE")}.`
       : "Damit kannst du auf dem iPhone jeden Cube bauen und draften – auch ohne PC und ohne Netz."}</p>
     <div class="balken-gross" id="db_balken" ${S.dbLaedt ? "" : "hidden"}><i style="width:8%"></i></div><p class="klein-text" id="db_text">${esc((S.dbLaedt || {}).text || "")}</p>
-    <button type="button" class="quelle" id="db_pc">${ICON.datei}<span><b>Vom PC</b><small>Generator › Draften › „Alle Karten aufs iPhone“, dann hier die Datei aus OneDrive › Cube Gen › handy wählen. Am genauesten.</small></span></button>
+    <div id="db_online"></div>
+    <button type="button" class="quelle" id="db_pc">${ICON.datei}<span><b>Vom PC als Datei</b><small>Generator › Draften › „Alle Karten aufs iPhone“, dann hier die Datei aus OneDrive › Cube Gen › handy wählen.</small></span></button>
     <button type="button" class="quelle" id="db_sf" ${S.dbLaedt ? "disabled" : ""}>${ICON.laden}<span><b>Von Scryfall laden</b><small>ohne PC, im WLAN: etwa 150 MB, ein paar Minuten</small></span></button>`);
   box.querySelector("#db_pc").onclick = () => $("#datei").click();
+  // Stand vom PC, den Claude mit der App veröffentlicht hat
+  fetch("cubes/index.json", {cache: "no-cache"}).then(r => r.json()).then(liste => {
+    const x = liste.find(e => e.art === "karten"), ziel = box.querySelector("#db_online");
+    if (!x || !ziel) return;
+    const aktuell = S.db && S.db.quelle === "pc" && S.db.stand >= x.stand;
+    ziel.innerHTML = `<button type="button" class="quelle" id="db_web" ${aktuell || S.dbLaedt ? "disabled" : ""}>${ICON.laden}<span><b>Vom PC laden</b><small>${zahl(x.karten)} Karten mit Elo, Vorbild-Cubes und deiner Liste „Zu stark“, Stand ${new Date(x.stand * 1000).toLocaleDateString("de-DE")}${aktuell ? " – schon da" : ` · etwa ${x.mb} MB`}</small></span></button>`;
+    ziel.querySelector("#db_web").onclick = async ev => {
+      ev.currentTarget.disabled = true;
+      dbStatus("Lade die Karten vom PC …", 0, 1);
+      try { const d = await (await fetch("cubes/" + x.datei)).json(); await dbVomPc(d); }
+      catch (e) { dbStatus(null); hinweis("Laden fehlgeschlagen: " + e.message, 5000); }
+    };
+  }).catch(() => {});
   box.querySelector("#db_sf").onclick = ev => { ev.currentTarget.disabled = true; dbVonScryfall(); };
   if (S.dbLaedt) dbStatus(S.dbLaedt.text, S.dbLaedt.wert, S.dbLaedt.gesamt);
 }
