@@ -114,7 +114,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .fakt{min-width:0}
 .fakt small{display:block;color:var(--asche);font-size:.85rem}
 .fakt b{display:block;font:600 clamp(1.05rem,1.8vw,1.45rem)/1.2 var(--zier);color:var(--eis-hell)}
-.fakt.preis b{color:var(--glut-hell)}
 
 /* Joker */
 /* Joker: unten statt des Buzzer-Hinweises – die Karte bleibt sichtbar, während man überlegt */
@@ -368,12 +367,7 @@ async function holeInfo(c) {
   const papier = drucke.filter(p => !p.digital && (p.games || []).includes("paper"));
   const alle = papier.length ? papier : drucke;
   const erst = alle.reduce((a, p) => (!a || p.released_at < a.released_at ? p : a), null);
-  let preis = null;
-  for (const p of alle) for (const k of ["eur", "eur_foil", "eur_etched"]) {
-    const v = parseFloat(p.prices && p.prices[k]);
-    if (v > 0 && (preis === null || v < preis)) preis = v;
-  }
-  return {set: erst ? erst.set_name : null, jahr: erst ? erst.released_at.slice(0, 4) : (c.erstdruck || "").slice(0, 4), preis, zeit: Date.now()};
+  return {set: erst ? erst.set_name : null, jahr: erst ? erst.released_at.slice(0, 4) : (c.erstdruck || "").slice(0, 4), zeit: Date.now()};
 }
 async function ladeInfos(fortschritt) {
   const alt = 2 * 24 * 3600 * 1000;
@@ -435,7 +429,7 @@ async function starteZiehung(neu) {
     pool.commander.forEach(c => { c.ci = c.ci || "C"; });
     hinweis.textContent = "Kartenbilder laden …";
     await ladeBilder(f => balken.firstChild.style.width = (f * 40) + "%");
-    hinweis.textContent = "Erstes Set und Preise holen …";
+    hinweis.textContent = "Erstes Set der Commander holen …";
     await ladeInfos(f => balken.firstChild.style.width = (40 + f * 60) + "%");
   } catch (e) {
     hinweis.textContent = "Laden hat nicht geklappt. Prüf die Internetverbindung und versuch es noch einmal.";
@@ -455,7 +449,7 @@ function baueSpur() {
   const frei = pool.commander.filter(c => !S.zuteilung.some(t => t.name === c.name));
   const quelle = frei.length >= 4 ? frei : pool.commander;
   spurKarten = [];
-  for (let i = 0; i < 78; i++) {
+  for (let i = 0; i < 140; i++) {
     let c;
     do { c = quelle[Math.floor(Math.random() * quelle.length)]; } while (quelle.length > 2 && (c === spurKarten[i - 1] || c === spurKarten[i - 2]));
     spurKarten.push(c);
@@ -496,16 +490,21 @@ function drehe(c) {
   driftAn = false;
   const {w, s, start} = schritt(), mitte = walze.clientWidth / 2;
   const sichtbar = Math.floor((pos + mitte - start) / s);
-  zielIndex = Math.min(spurKarten.length - 6, sichtbar + 58);
+  zielIndex = Math.min(spurKarten.length - 6, sichtbar + 100);
   spurKarten[zielIndex] = c;
   for (const j of [zielIndex - 1, zielIndex + 1]) {       // Nachbarn dürfen nicht derselbe sein
     if (spurKarten[j] === c) spurKarten[j] = pool.commander.find(x => x !== c && x !== spurKarten[j - 1] && x !== spurKarten[j + 1]) || spurKarten[j];
   }
   [zielIndex - 1, zielIndex, zielIndex + 1].forEach(j => { if (spur.children[j]) spur.children[j].firstChild.src = spurKarten[j].bild; });
-  const versatz = (Math.random() * 0.72 - 0.36) * w;     // knapp neben der Mitte halten – spannender
-  const ziel = start + zielIndex * s + w / 2 - mitte + versatz, von = pos;
-  const dauer = RUHIG ? 1800 : 6800 + Math.random() * 1200;
-  const ease = t => 1 - Math.pow(1 - t, 4.2);
+  // Erst knapp neben der Mitte ausrollen (spannend: rutscht sie noch rüber?), dann genau ins Fenster einrasten
+  // Position direkt an der Zielkarte messen: Kartenbreite und Abstand sind krumme Pixelwerte, hochgerechnet
+  // über 100 Karten summiert sich das Runden sonst zu einem sichtbaren Versatz neben dem Fenster
+  const zielKarte = spur.children[zielIndex];
+  const mittig = zielKarte.offsetLeft + zielKarte.getBoundingClientRect().width / 2 - mitte;
+  const versatz = RUHIG ? 0 : (Math.random() < 0.5 ? -1 : 1) * (0.12 + Math.random() * 0.22) * w;
+  const ziel = mittig + versatz, von = pos;
+  const dauer = RUHIG ? 1800 : 11000 + Math.random() * 2000;
+  const ease = t => 1 - Math.pow(1 - t, 3.2);
   let t0 = null, letzterIndex = Math.floor((von + mitte - start) / s), letzterTick = 0, alt = von, altT = 0;
   TON.start();
   return new Promise(fertig => {
@@ -521,7 +520,21 @@ function drehe(c) {
         if (t - letzterTick > 28) { TON.tick(Math.min(1, v / 6)); letzterTick = t; }
       }
       if (f < 1) requestAnimationFrame(lauf);
-      else fertig();
+      else einrasten();
+    };
+    const einrasten = () => {
+      if (Math.abs(mittig - pos) < 1) { pos = mittig; setzeSpur(pos); fertig(); return; }
+      const a = pos, d = RUHIG ? 1 : 420;
+      setTimeout(() => {
+        let r0 = null;
+        const rast = t => {
+          if (r0 === null) r0 = t;
+          const f = Math.min(1, (t - r0) / d), e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+          pos = a + (mittig - a) * e; setzeSpur(pos);
+          if (f < 1) requestAnimationFrame(rast); else fertig();
+        };
+        requestAnimationFrame(rast);
+      }, RUHIG ? 0 : 320);
     };
     requestAnimationFrame(lauf);
   });
@@ -560,7 +573,6 @@ function farbVerlauf(ci) {
   const a = f[0] || "#3fe3f2", b = f[1] || a, c = f[2] || a;
   return `--c1:${a};--c2:${b};--c3:${c}`;
 }
-function euro(v) { return v == null ? "–" : "ab " + v.toLocaleString("de-DE", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " €"; }
 function steckbrief(c) {
   const i = info[c.name] || {};
   const pips = (c.ci || "").split("").map(f => `<img src="https://svgs.scryfall.io/card-symbols/${f}.svg" alt="${f}">`).join("");
@@ -572,7 +584,6 @@ function steckbrief(c) {
     <div class="fakten">
       <div class="fakt"><small>Stark in</small><b>${arch}</b></div>
       <div class="fakt"><small>Zuerst erschienen in</small><b>${set}</b></div>
-      <div class="fakt preis"><small>Günstigste Version</small><b>${euro(i.preis)}</b></div>
     </div></div>`;
 }
 function zeige(c, joker) {
