@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#03080c">
+<title>Commander-Ziehung</title>
+<style>
+@font-face{font-family:"Chakra Petch";font-weight:600;font-display:swap;src:url(../fonts/chakra-petch-600.woff2) format("woff2")}
+@font-face{font-family:"Barlow";font-weight:400;font-display:swap;src:url(../fonts/barlow-400.woff2) format("woff2")}
+@font-face{font-family:"Barlow";font-weight:500;font-display:swap;src:url(../fonts/barlow-500.woff2) format("woff2")}
+@font-face{font-family:"Barlow";font-weight:700;font-display:swap;src:url(../fonts/barlow-700.woff2) format("woff2")}
+:root{
+  --abgrund:#03080c; --tief:#061820; --eis:#3fe3f2; --eis-hell:#b9f6fb; --glut:#ffb547; --glut-hell:#ffd58c;
+  --asche:#8aa3ad; --text:#e6f3f5; --linie:rgba(63,227,242,.22);
+  --W:#f3e6b8; --U:#4aa8ff; --B:#a77bd1; --R:#ff6a3d; --G:#46c47a;
+  --zier:"Chakra Petch","Segoe UI",system-ui,sans-serif; --ui:"Barlow","Segoe UI",system-ui,sans-serif;
+  --kw:clamp(118px,14.5vw,232px);           /* Kartenbreite in der Walze */
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(ellipse 80% 60% at 50% 52%,#0b2f3b 0%,#05161d 46%,var(--abgrund) 100%);color:var(--text);
+  font:16px/1.45 var(--ui);overflow:hidden;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--glut);outline-offset:3px}
+
+/* ------------------------------------------------ Einrichten */
+#einrichten{height:100%;overflow:auto;padding:max(24px,4vh) max(16px,env(safe-area-inset-right)) 32px max(16px,env(safe-area-inset-left))}
+.rahmen{max-width:640px;margin:0 auto}
+.kopf h1{margin:0;font:600 clamp(2rem,6vw,3.2rem)/1.05 var(--zier);color:#fff;text-shadow:0 0 22px rgba(63,227,242,.45)}
+.kopf p{margin:8px 0 0;color:var(--asche);max-width:52ch}
+.gruppe{margin-top:28px}
+.gruppe h2{margin:0 0 10px;font:600 1.05rem/1.2 var(--zier);color:var(--eis-hell);letter-spacing:.03em}
+.cubes{display:grid;gap:10px}
+.cube-wahl{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:14px 16px;border-radius:12px;
+  background:rgba(6,24,32,.75);border:1px solid var(--linie)}
+.cube-wahl[aria-pressed=true]{border-color:var(--glut);box-shadow:0 0 0 1px var(--glut) inset,0 0 24px rgba(255,181,71,.18)}
+.cube-wahl b{display:block;font:600 1.05rem/1.2 var(--zier)}
+.cube-wahl small{color:var(--asche)}
+.cube-wahl .punkt{flex:none;width:14px;height:14px;border-radius:50%;border:2px solid var(--asche)}
+.cube-wahl[aria-pressed=true] .punkt{border-color:var(--glut);background:radial-gradient(circle,var(--glut) 45%,transparent 50%)}
+.zaehler{display:flex;align-items:center;gap:14px}
+.zaehler button{width:44px;height:44px;border-radius:50%;border:1px solid var(--linie);background:rgba(6,24,32,.8);font-size:1.4rem;line-height:1}
+.zaehler output{font:600 1.8rem/1 var(--zier);min-width:2ch;text-align:center}
+.namen{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:12px}
+.namen input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--linie);background:rgba(3,10,14,.8);color:var(--text);font:500 1rem var(--ui)}
+.namen input:focus{border-color:var(--eis);outline:none}
+.los{margin-top:28px;width:100%;padding:16px;border:0;border-radius:12px;font:600 1.3rem/1 var(--zier);color:#2b1600;
+  background:linear-gradient(180deg,var(--glut-hell),var(--glut));box-shadow:0 0 30px rgba(255,181,71,.35)}
+.los:disabled{opacity:.6;cursor:progress}
+.ladebalken{height:4px;border-radius:2px;background:rgba(255,255,255,.08);margin-top:12px;overflow:hidden}
+.ladebalken i{display:block;height:100%;width:0;background:var(--eis);transition:width .2s}
+.hinweis{color:var(--asche);font-size:.92rem;margin-top:10px}
+.fehler{color:#ff9a86}
+
+/* ------------------------------------------------ Bühne */
+#buehne{position:fixed;inset:0;display:flex;flex-direction:column;user-select:none;-webkit-user-select:none}
+.leiste{display:flex;align-items:center;gap:10px;padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left))}
+.leiste .fortschritt{font:600 .95rem/1 var(--zier);color:var(--asche);letter-spacing:.04em}
+.leiste .platz{flex:1}
+.knopf-rund{width:42px;height:42px;border-radius:50%;border:1px solid var(--linie);background:rgba(6,24,32,.75);display:grid;place-items:center}
+.knopf-rund svg{width:20px;height:20px;fill:none;stroke:var(--eis-hell);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ansage{text-align:center;padding:2vh 16px 0}
+.ansage small{display:block;font:500 clamp(.95rem,1.6vw,1.2rem)/1.2 var(--ui);color:var(--asche)}
+.ansage b{display:block;font:600 clamp(2.2rem,6.5vw,5rem)/1.05 var(--zier);color:#fff;text-shadow:0 0 28px rgba(63,227,242,.5);
+  overflow-wrap:anywhere}
+
+/* Walze: Karten laufen unter dem Fenster durch */
+.walze{position:relative;flex:1;min-height:0;display:flex;align-items:center;overflow:hidden;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.spur{display:flex;gap:calc(var(--kw) * .09);will-change:transform;padding:0 50vw}
+.rk{flex:none;width:var(--kw);aspect-ratio:488/680;border-radius:calc(var(--kw) * .05);overflow:hidden;background:#0a1d25;
+  box-shadow:0 10px 24px rgba(0,0,0,.5);transition:transform .35s cubic-bezier(.2,.8,.2,1),filter .35s,opacity .35s}
+.rk img{width:100%;height:100%;object-fit:cover;display:block}
+.walze.halt .rk{filter:brightness(.38) saturate(.6)}
+.walze.halt .rk.treffer{filter:none;transform:scale(1.1);box-shadow:0 0 0 2px var(--glut),0 0 40px rgba(255,181,71,.6)}
+/* Fenster in der Mitte: zwei Zeiger, ein leiser Lichtrahmen */
+.fenster{position:absolute;left:50%;top:50%;width:calc(var(--kw) * 1.16);aspect-ratio:488/680;transform:translate(-50%,-50%);pointer-events:none;
+  border-radius:calc(var(--kw) * .07);box-shadow:0 0 0 1px rgba(185,246,251,.35),0 0 30px rgba(63,227,242,.25),inset 0 0 30px rgba(63,227,242,.12)}
+.fenster::before,.fenster::after{content:"";position:absolute;left:50%;width:0;height:0;transform:translateX(-50%);
+  border-left:14px solid transparent;border-right:14px solid transparent;filter:drop-shadow(0 0 8px rgba(255,181,71,.8))}
+.fenster::before{top:-22px;border-top:18px solid var(--glut)}
+.fenster::after{bottom:-22px;border-bottom:18px solid var(--glut)}
+.unten{text-align:center;padding:0 16px max(22px,calc(env(safe-area-inset-bottom) + 14px));min-height:64px}
+.buzzer-hinweis{display:inline-flex;align-items:center;gap:10px;font:600 clamp(1rem,1.9vw,1.35rem)/1 var(--zier);color:var(--glut-hell);
+  padding:12px 22px;border-radius:999px;border:1px solid rgba(255,181,71,.45);background:rgba(40,24,4,.35)}
+.buzzer-hinweis i{width:12px;height:12px;border-radius:50%;background:var(--glut);box-shadow:0 0 14px var(--glut);animation:puls 1.4s ease-in-out infinite}
+@keyframes puls{50%{transform:scale(.6);opacity:.5}}
+
+/* Enthüllung: Karte groß, darunter die Infos */
+.enthuellung{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(12px,2.2vh,26px);padding:8px 16px}
+.held{position:relative;height:min(48vh,88vw * 680 / 488);aspect-ratio:488/680;animation:auftritt .9s cubic-bezier(.16,.9,.3,1.15) both;transition:height .4s ease}
+.held img{position:relative;width:100%;height:100%;border-radius:4.6%;display:block;box-shadow:0 24px 50px rgba(0,0,0,.6)}
+/* Schein in den Farben des Commanders */
+.held .aura{position:absolute;inset:-18%;border-radius:50%;filter:blur(28px);opacity:.75;
+  background:conic-gradient(from 0deg,var(--c1),var(--c2),var(--c3),var(--c1))}
+.held .strahl{position:absolute;inset:-60%;border-radius:50%;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.12) 0 4deg,transparent 4deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 18%,transparent 62%);mask:radial-gradient(circle,#000 18%,transparent 62%);
+  animation:strahlen 1.6s ease-out both}
+@keyframes auftritt{from{transform:scale(.55) rotateY(80deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes strahlen{from{transform:scale(.4) rotate(-20deg);opacity:1}to{transform:scale(1.15) rotate(10deg);opacity:0}}
+.steckbrief{text-align:center;max-width:min(92vw,760px);animation:steckbrief .6s .35s ease-out both}
+@keyframes steckbrief{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.steckbrief h2{margin:0;font:600 clamp(1.6rem,3.6vw,2.8rem)/1.08 var(--zier);color:#fff;text-wrap:balance}
+.steckbrief .typ{color:var(--asche);margin-top:4px;font-size:clamp(.9rem,1.3vw,1.05rem)}
+.pips{display:inline-flex;gap:6px;vertical-align:middle;margin-left:10px}
+.pips img{width:clamp(18px,2vw,26px);height:auto}
+.fakten{display:flex;flex-wrap:wrap;justify-content:center;gap:10px clamp(16px,3vw,40px);margin-top:16px}
+.fakt{min-width:0}
+.fakt small{display:block;color:var(--asche);font-size:.85rem}
+.fakt b{display:block;font:600 clamp(1.05rem,1.8vw,1.45rem)/1.2 var(--zier);color:var(--eis-hell)}
+.fakt.preis b{color:var(--glut-hell)}
+
+/* Joker */
+/* Joker: unten statt des Buzzer-Hinweises – die Karte bleibt sichtbar, während man überlegt */
+.joker{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:6px 18px;width:min(94vw,760px);margin:0 auto;padding:14px 18px 12px;text-align:left;
+  border-radius:16px;background:linear-gradient(180deg,rgba(60,36,6,.96),rgba(24,14,2,.97));border:1px solid var(--glut);
+  box-shadow:0 0 0 1px rgba(255,213,140,.25) inset,0 0 50px rgba(255,181,71,.4);animation:joker .7s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes joker{from{transform:scale(.4) rotate(-4deg);opacity:0}to{transform:none;opacity:1}}
+.joker b{grid-row:span 2;font:600 clamp(2rem,4.4vw,3.2rem)/1 var(--zier);color:var(--glut-hell);letter-spacing:.04em;text-shadow:0 0 24px rgba(255,181,71,.8)}
+.joker p{margin:0;color:#f6e6c6;font-size:clamp(.9rem,1.3vw,1.05rem)}
+.joker .wahl{display:flex;gap:10px}
+.joker .uhr{grid-column:1/-1;margin-top:6px}
+#buehne.mit-joker .held{height:min(34vh,60vw * 680 / 488)}
+@media (max-width:640px){.joker{grid-template-columns:1fr;text-align:center;padding:12px 14px 10px}.joker b{grid-row:auto}.joker p{font-size:.85rem}
+  #buehne.mit-joker .held{height:min(26vh,48vw * 680 / 488)}
+  #buehne.mit-joker .joker p,#buehne.mit-joker .typ{display:none}
+  #buehne.mit-joker .enthuellung{gap:8px}}
+.joker .wahl button{flex:1;padding:14px 10px;border-radius:12px;font:600 1.05rem/1.1 var(--zier)}
+.joker .nochmal{border:0;color:#2b1600;background:linear-gradient(180deg,var(--glut-hell),var(--glut))}
+.joker .behalten{border:1px solid rgba(255,213,140,.5);background:transparent}
+.uhr{height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin-top:16px;overflow:hidden}
+.uhr i{display:block;height:100%;background:var(--glut);transform-origin:left;animation:uhr linear forwards}
+@keyframes uhr{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+
+/* Übersicht */
+#uebersicht{position:fixed;inset:0;overflow:auto;padding:max(24px,4vh) max(16px,env(safe-area-inset-right)) 32px max(16px,env(safe-area-inset-left))}
+#uebersicht h1{margin:0 0 18px;text-align:center;font:600 clamp(1.8rem,4.5vw,3rem)/1.1 var(--zier);color:#fff}
+.tafel{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(40vw,190px),1fr));gap:clamp(12px,2vw,22px);max-width:940px;margin:0 auto}
+.platz-karte{text-align:center}
+.platz-karte img{width:100%;aspect-ratio:488/680;border-radius:4.6%;display:block;box-shadow:0 12px 26px rgba(0,0,0,.5)}
+.platz-karte b{display:block;margin-top:8px;font:600 1.05rem/1.2 var(--zier);color:#fff;overflow-wrap:anywhere}
+.platz-karte small{display:block;color:var(--asche);font-size:.85rem}
+.platz-karte .joker-mal{color:var(--glut-hell)}
+.schluss{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:26px 0 8px}
+.schluss button{padding:13px 20px;border-radius:12px;border:1px solid var(--linie);background:rgba(6,24,32,.8);font:600 1rem/1 var(--zier)}
+.schluss .los-klein{border:0;color:#2b1600;background:linear-gradient(180deg,var(--glut-hell),var(--glut))}
+
+@media (max-width:640px){
+  :root{--kw:34vw}
+  .held{height:min(40vh,74vw * 680 / 488)}
+}
+@media (prefers-reduced-motion:reduce){
+  .held,.steckbrief,.joker{animation-duration:.01s}
+  .held .strahl{display:none}
+  .buzzer-hinweis i{animation:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Einrichten -->
+<section id="einrichten">
+  <div class="rahmen">
+    <header class="kopf">
+      <h1>Commander-Ziehung</h1>
+      <p>Jeder drückt den Buzzer und bekommt seinen Commander. Keine Farbkombination doppelt, jede Farbe etwa gleich oft.</p>
+    </header>
+    <div class="gruppe">
+      <h2>Cube</h2>
+      <div class="cubes" id="cubes"></div>
+    </div>
+    <div class="gruppe">
+      <h2>Spieler</h2>
+      <div class="zaehler">
+        <button type="button" id="weniger" aria-label="Ein Spieler weniger">−</button>
+        <output id="anzahl">8</output>
+        <button type="button" id="mehr" aria-label="Ein Spieler mehr">+</button>
+      </div>
+      <div class="namen" id="namen"></div>
+    </div>
+    <button type="button" class="los" id="los">Ziehung starten</button>
+    <div class="ladebalken" id="ladebalken" hidden><i></i></div>
+    <p class="hinweis" id="ladehinweis">Buzzer, Enter oder Leertaste drehen. Am Handy: auf den Bildschirm tippen.</p>
+  </div>
+</section>
+
+<!-- Bühne -->
+<section id="buehne" hidden>
+  <div class="leiste">
+    <span class="fortschritt" id="fortschritt"></span>
+    <span class="platz"></span>
+    <button type="button" class="knopf-rund" id="rueck" title="Rückgängig (Rücktaste)" aria-label="Rückgängig">
+      <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+    <button type="button" class="knopf-rund" id="ton" title="Ton an/aus" aria-label="Ton an oder aus">
+      <svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path id="ton-welle" d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg></button>
+    <button type="button" class="knopf-rund" id="zur-tafel" title="Übersicht" aria-label="Übersicht">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></button>
+  </div>
+  <div class="ansage"><small id="ansage-klein">Als Nächstes</small><b id="ansage-name"></b></div>
+  <div class="walze" id="walze"><div class="spur" id="spur"></div><div class="fenster"></div></div>
+  <div class="enthuellung" id="enthuellung" hidden></div>
+  <div class="unten"><span class="buzzer-hinweis" id="buzzer-hinweis"><i></i><span id="buzzer-text">Buzzer drücken</span></span></div>
+</section>
+
+<!-- Übersicht -->
+<section id="uebersicht" hidden>
+  <h1>Eure Commander</h1>
+  <div class="tafel" id="tafel"></div>
+  <div class="schluss">
+    <button type="button" id="weiter-ziehen" class="los-klein" hidden>Weiter ziehen</button>
+    <button type="button" id="neue-runde">Neue Ziehung</button>
+    <button type="button" id="zum-einrichten">Spieler und Cube ändern</button>
+  </div>
+</section>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const RUHIG = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const FEIN = matchMedia("(pointer: fine)").matches;
+const FARBEN = "WUBRG";
+const FARBWERT = {W: "#f3e6b8", U: "#4aa8ff", B: "#a77bd1", R: "#ff6a3d", G: "#46c47a"};
+const JOKER_CHANCE = (p => p === null ? 0.25 : Math.min(1, Math.max(0, +p / 100)))(new URLSearchParams(location.search).get("joker"));   // ?joker=100 zum Ausprobieren
+const JOKER_SEKUNDEN = 12;
+const SPEICHER = "spin-stand-v1", INFO_SPEICHER = "spin-info-v1";
+
+const lies = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
+const schreib = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const warte = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+// ------------------------------------------------------------------ Zustand
+let pools = [], pool = null, info = lies(INFO_SPEICHER) || {};
+let S = lies(SPEICHER) || {poolId: null, namen: [], zuteilung: []};
+// zuteilung[i] = {name: Commander, joker: true/false} für Spieler i
+let phase = "einrichten";          // bereit | dreht | enthuellt (kurz gesperrt) | zeigt | joker | fertig
+let jokerOffen = false, jokerTimer = 0, zweiterDreh = false;
+
+function speichern() { schreib(SPEICHER, S); }
+function amZug() { return S.zuteilung.length; }
+function commander(name) { return pool.commander.find(c => c.name === name); }
+
+// ------------------------------------------------------------------ Faire Ziehung
+// Regeln für n Spieler: keine Farbkombination doppelt; jede Farbe höchstens ⌈2n/5⌉-mal und am Ende
+// mindestens ⌊2n/5⌋−1-mal; höchstens ⌊n/4⌋ Einfarbige und ⌊n/4⌋ Dreifarbige. Gezogen wird zufällig unter
+// allen Commandern, mit denen die Runde danach noch aufgehen kann – auch der Letzte bekommt keinen Rest.
+function regeln(n, locker = 0) {
+  const s = 2 * n / 5;
+  return {max: Math.ceil(s) + (locker >= 2 ? 1 : 0), min: locker >= 1 ? 0 : Math.max(0, Math.floor(s) - 1),
+          mono: Math.max(1, Math.floor(n / 4)) + (locker >= 2 ? 1 : 0), drei: Math.max(1, Math.floor(n / 4)) + (locker >= 2 ? 1 : 0)};
+}
+function stand(liste) {
+  const z = {W: 0, U: 0, B: 0, R: 0, G: 0, mono: 0, drei: 0, ci: new Set()};
+  for (const c of liste) {
+    for (const f of c.ci) z[f]++;
+    if (c.ci.length === 1) z.mono++;
+    if (c.ci.length >= 3) z.drei++;
+    z.ci.add(c.ci);
+  }
+  return z;
+}
+function geht(z, c, r) {
+  if (z.ci.has(c.ci)) return false;
+  if (c.ci.length === 1 && z.mono + 1 > r.mono) return false;
+  if (c.ci.length >= 3 && z.drei + 1 > r.drei) return false;
+  for (const f of c.ci) if (z[f] + 1 > r.max) return false;
+  return true;
+}
+function dazu(z, c, d) {
+  for (const f of c.ci) z[f] += d;
+  if (c.ci.length === 1) z.mono += d;
+  if (c.ci.length >= 3) z.drei += d;
+  d > 0 ? z.ci.add(c.ci) : z.ci.delete(c.ci);
+}
+function machbar(z, rest, offen, r, ab = 0) {
+  if (offen === 0) return FARBEN.split("").every(f => z[f] >= r.min);
+  let fehlt = 0;
+  for (const f of FARBEN) fehlt += Math.max(0, r.min - z[f]);
+  if (fehlt > offen * 3) return false;
+  for (let i = ab; i <= rest.length - offen; i++) {
+    const c = rest[i];
+    if (!geht(z, c, r)) continue;
+    dazu(z, c, 1);
+    const ok = machbar(z, rest, offen - 1, r, i + 1);
+    dazu(z, c, -1);
+    if (ok) return true;
+  }
+  return false;
+}
+function ziehe(ausser, nurStreng = false) {
+  const n = S.namen.length, schon = S.zuteilung.map(t => commander(t.name));
+  const frei = pool.commander.filter(c => !S.zuteilung.some(t => t.name === c.name) && c.name !== ausser);
+  for (let locker = 0; locker <= (nurStreng ? 0 : 3); locker++) {
+    const r = locker === 3 ? {max: 99, min: 0, mono: 99, drei: 99} : regeln(n, locker);
+    const z = stand(schon);
+    const reihe = [...frei].sort(() => Math.random() - 0.5);
+    for (const c of reihe) {
+      if (!geht(z, c, r)) continue;
+      dazu(z, c, 1);
+      const rest = reihe.filter(x => x !== c);
+      const ok = machbar(z, rest, n - schon.length - 1, r);
+      dazu(z, c, -1);
+      if (ok) return c;
+    }
+  }
+  return nurStreng ? null : frei[Math.floor(Math.random() * frei.length)];
+}
+
+// ------------------------------------------------------------------ Ton (ohne Dateien, per WebAudio)
+let ac = null, tonAn = lies("spin-ton") !== false;
+function audio() {
+  if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (ac && ac.state === "suspended") ac.resume();
+  return tonAn ? ac : null;
+}
+function klang(freq, dauer, typ = "sine", laut = 0.2, wann = 0, gleit = 0) {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + wann, o = a.createOscillator(), g = a.createGain();
+  o.type = typ; o.frequency.setValueAtTime(freq, t);
+  if (gleit) o.frequency.exponentialRampToValueAtTime(gleit, t + dauer);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(laut, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dauer);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dauer + 0.05);
+}
+function rauschen(dauer, von, bis, laut = 0.12) {
+  const a = audio(); if (!a) return;
+  const b = a.createBuffer(1, Math.floor(a.sampleRate * dauer), a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const q = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime;
+  q.buffer = b; f.type = "bandpass"; f.Q.value = 1.2;
+  f.frequency.setValueAtTime(von, t); f.frequency.exponentialRampToValueAtTime(bis, t + dauer);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(laut, t + dauer * 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + dauer);
+  q.connect(f).connect(g).connect(a.destination); q.start(t);
+}
+const TON = {
+  start() { rauschen(0.7, 300, 2400, 0.16); klang(140, 0.35, "triangle", 0.18, 0, 70); },
+  tick(tempo) { klang(1500 + Math.random() * 300, 0.03, "square", 0.035 + 0.05 * (1 - tempo)); },
+  halt() { klang(90, 0.4, "sine", 0.35, 0, 55); klang(880, 1.2, "sine", 0.12, 0.02); klang(1320, 1.4, "sine", 0.09, 0.06); },
+  enthuellen() { [523, 659, 784, 1047].forEach((f, i) => klang(f, 0.9, "triangle", 0.11, i * 0.09)); },
+  joker() { [784, 988, 1175, 1568, 1976].forEach((f, i) => klang(f, 0.5, "square", 0.05, i * 0.07)); klang(196, 0.8, "sawtooth", 0.06); },
+};
+
+// ------------------------------------------------------------------ Kartendaten von Scryfall (Set, Preis)
+async function holeJson(url) {
+  const r = await fetch(url, {headers: {Accept: "application/json"}});
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+async function holeInfo(c) {
+  let url = "https://api.scryfall.com/cards/search?unique=prints&order=released&dir=asc&q=" + encodeURIComponent(`!"${c.voll || c.name}"`), drucke = [];
+  try { await holeJson(url); } catch (e) {
+    const karte = await holeJson("https://api.scryfall.com/cards/named?fuzzy=" + encodeURIComponent(c.name));
+    await warte(110);
+    url = karte.prints_search_uri;
+  }
+  for (let seite = 0; url && seite < 4; seite++) {
+    const d = await holeJson(url);
+    drucke.push(...d.data);
+    url = d.has_more ? d.next_page : null;
+    await warte(110);
+  }
+  const papier = drucke.filter(p => !p.digital && (p.games || []).includes("paper"));
+  const alle = papier.length ? papier : drucke;
+  const erst = alle.reduce((a, p) => (!a || p.released_at < a.released_at ? p : a), null);
+  let preis = null;
+  for (const p of alle) for (const k of ["eur", "eur_foil", "eur_etched"]) {
+    const v = parseFloat(p.prices && p.prices[k]);
+    if (v > 0 && (preis === null || v < preis)) preis = v;
+  }
+  return {set: erst ? erst.set_name : null, jahr: erst ? erst.released_at.slice(0, 4) : (c.erstdruck || "").slice(0, 4), preis, zeit: Date.now()};
+}
+async function ladeInfos(fortschritt) {
+  const alt = 2 * 24 * 3600 * 1000;
+  const fehlen = pool.commander.filter(c => !info[c.name] || Date.now() - info[c.name].zeit > alt);
+  let i = 0;
+  for (const c of fehlen) {
+    try { info[c.name] = await holeInfo(c); } catch (e) { /* ohne Netz: Set-Jahr aus den Daten, Preis fehlt */ }
+    fortschritt(++i / Math.max(1, fehlen.length));
+  }
+  schreib(INFO_SPEICHER, info);
+}
+function ladeBilder(fortschritt) {
+  let fertig = 0;
+  const alle = pool.commander.map(c => new Promise(ok => {
+    const b = new Image(); b.decoding = "async";
+    b.onload = b.onerror = () => { fortschritt(++fertig / pool.commander.length); ok(); };
+    b.src = c.bild;
+  }));
+  return Promise.race([Promise.all(alle), warte(20000)]);
+}
+
+// ------------------------------------------------------------------ Einrichten
+async function start() {
+  try {
+    pools = await (await fetch("pools/index.json", {cache: "no-cache"})).json();
+  } catch (e) {
+    $("#ladehinweis").textContent = "Die Commander-Pools konnten nicht geladen werden. Prüf die Internetverbindung und lade die Seite neu.";
+    $("#ladehinweis").classList.add("fehler"); return;
+  }
+  if (!S.poolId || !pools.some(p => p.id === S.poolId)) S.poolId = pools[0].id;
+  if (!S.namen.length) S.namen = Array.from({length: 8}, (_, i) => "Spieler " + (i + 1));
+  zeichneEinrichten();
+  // Mitten in einer Ziehung neu geladen? Dann gleich weiter
+  if (S.zuteilung.length && S.laeuft) await starteZiehung(false);
+}
+function zeichneEinrichten() {
+  $("#cubes").innerHTML = pools.map(p => `<button type="button" class="cube-wahl" data-id="${esc(p.id)}" aria-pressed="${p.id === S.poolId}">
+    <span class="punkt"></span><span><b>${esc(p.name)}</b><small>${p.anzahl} Commander im Pool</small></span></button>`).join("");
+  $("#anzahl").textContent = S.namen.length;
+  $("#namen").innerHTML = S.namen.map((n, i) => `<input type="text" maxlength="24" value="${esc(n)}" aria-label="Name von Spieler ${i + 1}" data-i="${i}">`).join("");
+}
+$("#cubes").addEventListener("click", e => {
+  const b = e.target.closest(".cube-wahl"); if (!b) return;
+  S.poolId = b.dataset.id; S.zuteilung = []; speichern(); zeichneEinrichten();
+});
+$("#namen").addEventListener("input", e => { S.namen[+e.target.dataset.i] = e.target.value; speichern(); });
+$("#weniger").addEventListener("click", () => { if (S.namen.length > 3) { S.namen.pop(); S.zuteilung = []; speichern(); zeichneEinrichten(); } });
+$("#mehr").addEventListener("click", () => { const p = pools.find(x => x.id === S.poolId); if (S.namen.length < Math.floor((p ? p.anzahl : 24) / 3)) { S.namen.push("Spieler " + (S.namen.length + 1)); S.zuteilung = []; speichern(); zeichneEinrichten(); } });
+$("#los").addEventListener("click", () => { audio(); S.zuteilung = []; starteZiehung(true); });
+
+async function starteZiehung(neu) {
+  S.namen = S.namen.map((n, i) => (n || "").trim() || "Spieler " + (i + 1));
+  const los = $("#los"); los.disabled = true; los.textContent = "Lädt …";
+  const balken = $("#ladebalken"), hinweis = $("#ladehinweis");
+  balken.hidden = false;
+  try {
+    const meta = pools.find(p => p.id === S.poolId);
+    pool = await (await fetch(`pools/${meta.id}.json`, {cache: "no-cache"})).json();
+    pool.commander.forEach(c => { c.ci = c.ci || "C"; });
+    hinweis.textContent = "Kartenbilder laden …";
+    await ladeBilder(f => balken.firstChild.style.width = (f * 40) + "%");
+    hinweis.textContent = "Erstes Set und Preise holen …";
+    await ladeInfos(f => balken.firstChild.style.width = (40 + f * 60) + "%");
+  } catch (e) {
+    hinweis.textContent = "Laden hat nicht geklappt. Prüf die Internetverbindung und versuch es noch einmal.";
+    hinweis.classList.add("fehler"); los.disabled = false; los.textContent = "Ziehung starten"; return;
+  }
+  S.laeuft = true; speichern();
+  los.disabled = false; los.textContent = "Ziehung starten"; balken.hidden = true;
+  hinweis.textContent = "Buzzer, Enter oder Leertaste drehen. Am Handy: auf den Bildschirm tippen.";
+  $("#einrichten").hidden = true; $("#uebersicht").hidden = true; $("#buehne").hidden = false;
+  if (amZug() >= S.namen.length) zeigeTafel(); else bereit();
+}
+
+// ------------------------------------------------------------------ Walze
+const spur = $("#spur"), walze = $("#walze");
+let pos = 0, driftAn = false, zielIndex = 0, spurKarten = [];
+function baueSpur() {
+  const frei = pool.commander.filter(c => !S.zuteilung.some(t => t.name === c.name));
+  const quelle = frei.length >= 4 ? frei : pool.commander;
+  spurKarten = [];
+  for (let i = 0; i < 78; i++) {
+    let c;
+    do { c = quelle[Math.floor(Math.random() * quelle.length)]; } while (quelle.length > 2 && (c === spurKarten[i - 1] || c === spurKarten[i - 2]));
+    spurKarten.push(c);
+  }
+  spur.innerHTML = spurKarten.map(c => `<div class="rk"><img src="${esc(c.bild)}" alt="" draggable="false"></div>`).join("");
+  pos = 6 * schritt().s; setzeSpur(pos);            // ein paar Karten weit drin, damit beide Seiten voll sind
+  walze.classList.remove("halt");
+}
+function setzeSpur(p, unschaerfe = 0) {
+  spur.style.transform = `translate3d(${-p}px,0,0)`;
+  spur.style.filter = unschaerfe > 0.3 ? `blur(${unschaerfe.toFixed(1)}px)` : "";
+}
+function schritt() {
+  const a = spur.children[0], b = spur.children[1];
+  return {w: a.offsetWidth, s: b.offsetLeft - a.offsetLeft, start: a.offsetLeft};
+}
+function drift() {
+  driftAn = true;
+  let letzte = performance.now();
+  const lauf = t => {
+    if (!driftAn) return;
+    pos += (t - letzte) * (RUHIG ? 0 : 0.02); letzte = t;
+    const {s} = schritt();
+    if (pos > 18 * s) {
+      for (let k = 0; k < 8; k++) {
+        spur.firstChild.remove(); spurKarten.shift();
+        const c = spurKarten[Math.floor(Math.random() * spurKarten.length)];
+        spurKarten.push(c);
+        spur.insertAdjacentHTML("beforeend", `<div class="rk"><img src="${esc(c.bild)}" alt="" draggable="false"></div>`);
+      }
+      pos -= 8 * s;
+    }
+    setzeSpur(pos); requestAnimationFrame(lauf);
+  };
+  requestAnimationFrame(lauf);
+}
+function drehe(c) {
+  driftAn = false;
+  const {w, s, start} = schritt(), mitte = walze.clientWidth / 2;
+  const sichtbar = Math.floor((pos + mitte - start) / s);
+  zielIndex = Math.min(spurKarten.length - 6, sichtbar + 58);
+  spurKarten[zielIndex] = c;
+  for (const j of [zielIndex - 1, zielIndex + 1]) {       // Nachbarn dürfen nicht derselbe sein
+    if (spurKarten[j] === c) spurKarten[j] = pool.commander.find(x => x !== c && x !== spurKarten[j - 1] && x !== spurKarten[j + 1]) || spurKarten[j];
+  }
+  [zielIndex - 1, zielIndex, zielIndex + 1].forEach(j => { if (spur.children[j]) spur.children[j].firstChild.src = spurKarten[j].bild; });
+  const versatz = (Math.random() * 0.72 - 0.36) * w;     // knapp neben der Mitte halten – spannender
+  const ziel = start + zielIndex * s + w / 2 - mitte + versatz, von = pos;
+  const dauer = RUHIG ? 1800 : 6800 + Math.random() * 1200;
+  const ease = t => 1 - Math.pow(1 - t, 4.2);
+  let t0 = null, letzterIndex = Math.floor((von + mitte - start) / s), letzterTick = 0, alt = von, altT = 0;
+  TON.start();
+  return new Promise(fertig => {
+    const lauf = t => {
+      if (t0 === null) { t0 = t; altT = t; }
+      const f = Math.min(1, (t - t0) / dauer);
+      pos = von + (ziel - von) * ease(f);
+      const v = Math.abs(pos - alt) / Math.max(1, t - altT); alt = pos; altT = t;
+      setzeSpur(pos, FEIN && !RUHIG ? Math.min(5, v * 0.55) : 0);
+      const idx = Math.floor((pos + mitte - start) / s);
+      if (idx !== letzterIndex) {
+        letzterIndex = idx;
+        if (t - letzterTick > 28) { TON.tick(Math.min(1, v / 6)); letzterTick = t; }
+      }
+      if (f < 1) requestAnimationFrame(lauf);
+      else fertig();
+    };
+    requestAnimationFrame(lauf);
+  });
+}
+
+// ------------------------------------------------------------------ Ablauf
+function bereit() {
+  phase = "bereit"; jokerOffen = false; zweiterDreh = false;
+  document.querySelector(".joker")?.remove(); $("#buehne").classList.remove("mit-joker");
+  const i = amZug();
+  $("#fortschritt").textContent = `Spieler ${i + 1} von ${S.namen.length}`;
+  $("#ansage-klein").textContent = i === 0 ? "Los geht's mit" : "Als Nächstes";
+  $("#ansage-name").textContent = S.namen[i];
+  $("#enthuellung").hidden = true; walze.hidden = false;
+  $("#buzzer-hinweis").hidden = false; $("#buzzer-text").textContent = "Buzzer drücken";
+  baueSpur(); drift();
+}
+async function dreh(ausser) {
+  phase = "dreht";
+  $("#buzzer-hinweis").hidden = true;
+  $("#enthuellung").hidden = true; walze.hidden = false;
+  $("#ansage-klein").textContent = "Es zieht";
+  const c = ziehe(ausser);
+  if (zweiterDreh) baueSpur();
+  await drehe(c);
+  walze.classList.add("halt");
+  spur.children[zielIndex].classList.add("treffer");
+  TON.halt();
+  await warte(RUHIG ? 200 : 1400);
+  const joker = !zweiterDreh && Math.random() < JOKER_CHANCE && !!ziehe(c.name, true);   // nur, wenn es einen fairen Ersatz gibt
+  S.zuteilung.push({name: c.name, joker: zweiterDreh}); speichern();
+  zeige(c, joker);
+}
+function farbVerlauf(ci) {
+  const f = (ci || "").split("").map(x => FARBWERT[x]).filter(Boolean);
+  const a = f[0] || "#3fe3f2", b = f[1] || a, c = f[2] || a;
+  return `--c1:${a};--c2:${b};--c3:${c}`;
+}
+function euro(v) { return v == null ? "–" : "ab " + v.toLocaleString("de-DE", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " €"; }
+function steckbrief(c) {
+  const i = info[c.name] || {};
+  const pips = (c.ci || "").split("").map(f => `<img src="https://svgs.scryfall.io/card-symbols/${f}.svg" alt="${f}">`).join("");
+  const arch = c.neben ? `${esc(c.archetyp)}, ${esc(c.neben)}` : esc(c.archetyp);
+  const set = i.set ? `${esc(i.set)} (${esc(i.jahr)})` : esc(i.jahr || (c.erstdruck || "").slice(0, 4) || "–");
+  return `<div class="steckbrief">
+    <h2>${esc(c.name)}<span class="pips">${pips}</span></h2>
+    <div class="typ">${esc(c.typ)}</div>
+    <div class="fakten">
+      <div class="fakt"><small>Stark in</small><b>${arch}</b></div>
+      <div class="fakt"><small>Zuerst erschienen in</small><b>${set}</b></div>
+      <div class="fakt preis"><small>Günstigste Version</small><b>${euro(i.preis)}</b></div>
+    </div></div>`;
+}
+function zeige(c, joker) {
+  phase = "enthuellt";
+  walze.hidden = true;
+  const e = $("#enthuellung");
+  e.innerHTML = `<div class="held" style="${farbVerlauf(c.ci)}"><div class="aura"></div><div class="strahl"></div><img src="${esc(c.bild)}" alt="${esc(c.name)}"></div>${steckbrief(c)}`;
+  e.hidden = false;
+  $("#ansage-klein").textContent = "Commander für";
+  TON.enthuellen();
+  if (joker) setTimeout(() => zeigeJoker(), RUHIG ? 300 : 1900);
+  else setTimeout(() => { if (phase === "enthuellt") { phase = "zeigt"; weiterHinweis(); } }, RUHIG ? 200 : 1300);
+}
+function weiterHinweis() {
+  $("#buzzer-hinweis").hidden = false;
+  $("#buzzer-text").textContent = amZug() < S.namen.length ? "Buzzer: nächster Spieler" : "Buzzer: alle Commander zeigen";
+}
+function zeigeJoker() {
+  if (phase !== "enthuellt") return;
+  phase = "joker"; jokerOffen = true;
+  TON.joker();
+  const j = document.createElement("div");
+  j.className = "joker"; j.setAttribute("role", "dialog"); j.setAttribute("aria-label", "Joker");
+  j.innerHTML = `<b>Joker!</b><p>Du darfst noch einmal drehen. Dann gilt der neue Commander, der alte geht zurück in den Pool.</p>
+    <div class="wahl"><button type="button" class="nochmal">Nochmal drehen</button><button type="button" class="behalten">Behalten</button></div>
+    <div class="uhr"><i style="animation-duration:${JOKER_SEKUNDEN}s"></i></div>`;
+  $("#buzzer-hinweis").hidden = true;
+  $(".unten").appendChild(j); $("#buehne").classList.add("mit-joker");
+  j.querySelector(".nochmal").addEventListener("click", ev => { ev.stopPropagation(); jokerNochmal(); });
+  j.querySelector(".behalten").addEventListener("click", ev => { ev.stopPropagation(); jokerBehalten(); });
+  j.querySelector(".nochmal").focus({preventScroll: true});
+  jokerTimer = setTimeout(jokerBehalten, JOKER_SEKUNDEN * 1000);
+}
+function jokerBehalten() {
+  if (phase !== "joker") return;
+  clearTimeout(jokerTimer); jokerOffen = false;
+  document.querySelector(".joker")?.remove(); $("#buehne").classList.remove("mit-joker");
+  phase = "zeigt"; weiterHinweis();
+}
+function jokerNochmal() {
+  if (phase !== "joker") return;
+  clearTimeout(jokerTimer); jokerOffen = false;
+  const alt = S.zuteilung.pop(); speichern();
+  document.querySelector(".joker")?.remove(); $("#buehne").classList.remove("mit-joker");
+  zweiterDreh = true;
+  $("#ansage-klein").textContent = "Joker für";
+  dreh(alt.name);
+}
+function weiter() {
+  if (amZug() >= S.namen.length) zeigeTafel(); else bereit();
+}
+function rueckgaengig() {
+  if (phase === "dreht" || !S.zuteilung.length) return;
+  clearTimeout(jokerTimer);
+  S.zuteilung.pop(); speichern();
+  $("#uebersicht").hidden = true; $("#buehne").hidden = false;
+  bereit();
+}
+function zeigeTafel() {
+  phase = "fertig"; driftAn = false;
+  $("#buehne").hidden = true; $("#uebersicht").hidden = false;
+  $("#tafel").innerHTML = S.zuteilung.map((t, i) => {
+    const c = commander(t.name) || {name: t.name, bild: "", archetyp: ""};
+    return `<div class="platz-karte"><img src="${esc(c.bild)}" alt="${esc(c.name)}"><b>${esc(S.namen[i])}</b>
+      <small>${esc(c.name)}</small><small>${esc(c.archetyp)}${t.joker ? ' <span class="joker-mal">· Joker</span>' : ""}</small></div>`;
+  }).join("");
+  $("#weiter-ziehen").hidden = amZug() >= S.namen.length;
+}
+
+// ------------------------------------------------------------------ Eingaben: Buzzer (Enter), Leertaste, Tippen
+function buzzer() {
+  audio();
+  if (phase === "bereit") dreh();
+  else if (phase === "zeigt") weiter();
+  else if (phase === "joker") jokerNochmal();
+}
+addEventListener("keydown", e => {
+  if ($("#buehne").hidden) return;
+  if (e.key === "Enter" || e.key === " " || e.code === "NumpadEnter") { e.preventDefault(); if (!e.repeat) buzzer(); }
+  else if (e.key === "Backspace") { e.preventDefault(); rueckgaengig(); }
+  else if (e.key === "Escape" && phase === "joker") jokerBehalten();
+});
+$("#buehne").addEventListener("click", e => { if (!e.target.closest("button")) buzzer(); });
+$("#rueck").addEventListener("click", rueckgaengig);
+$("#zur-tafel").addEventListener("click", () => { if (phase !== "dreht") zeigeTafel(); });
+$("#weiter-ziehen").addEventListener("click", () => { $("#uebersicht").hidden = true; $("#buehne").hidden = false; bereit(); });
+$("#neue-runde").addEventListener("click", () => { S.zuteilung = []; speichern(); $("#uebersicht").hidden = true; $("#buehne").hidden = false; bereit(); });
+$("#zum-einrichten").addEventListener("click", () => {
+  S.laeuft = false; speichern(); driftAn = false;
+  $("#uebersicht").hidden = true; $("#buehne").hidden = true; $("#einrichten").hidden = false; zeichneEinrichten();
+});
+function zeichneTon() { $("#ton-welle").style.opacity = tonAn ? 1 : 0.15; }
+$("#ton").addEventListener("click", () => { tonAn = !tonAn; schreib("spin-ton", tonAn); zeichneTon(); });
+zeichneTon();
+start();
+</script>
+</body>
+</html>
