@@ -417,13 +417,44 @@ async function dbVonScryfall() {
       url = j.has_more ? j.next_page : null;
       await pause(110);                            // Scryfall: höchstens 10 Anfragen pro Sekunde
     }
+    dbStatus("Game Changer …", 1, 1);
+    const gc = await gameChanger();
+    for (const z of zeilen) if (gc.has(z.name)) z.game_changer = 1;
     dbStatus("Speichere …", 1, 1);
-    await dbSpeichern(zeilen, {quelle: "scryfall", stand: Date.now() / 1000, listen: {}});
+    await dbSpeichern(zeilen, {quelle: "scryfall", stand: Date.now() / 1000, listen: {}, gc: Date.now()});
     dbStatus(null);
     zeichneStart();
     hinweis(`${zahl(zeilen.length)} Karten auf dem iPhone.`);
   } catch (e) { dbStatus(null); hinweis(e.message, 6000); }
 }
+// Die offizielle Game-Changer-Liste – die einzige Stärke-Grenze, die es ohne Daten vom PC gibt
+async function gameChanger() {
+  const namen = new Set();
+  let url = SCRYFALL + "/cards/search?" + new URLSearchParams({q: "is:gamechanger", unique: "cards"});
+  while (url) {
+    const r = await fetch(url, {headers: {"Accept": "application/json"}});
+    if (!r.ok) throw new Error("Game-Changer-Liste nicht erreichbar.");
+    const j = await r.json();
+    for (const c of j.data || []) namen.add(c.name);
+    url = j.has_more ? j.next_page : null;
+    await pause(110);
+  }
+  return namen;
+}
+// Ältere Scryfall-Datenbank auf dem iPhone: Game Changer einmal nachtragen, ohne alles neu zu laden
+async function gcNachtragen() {
+  if (!navigator.onLine || !S.db || S.db.quelle !== "scryfall" || S.db.gc) return;
+  try {
+    const gc = await gameChanger();
+    const zeilen = await alle("karten");
+    const neu = zeilen.filter(z => gc.has(z.name) && !z.game_changer);
+    await speicher("karten", "readwrite", s => { for (const z of neu) { z.game_changer = 1; s.put(z); } });
+    await lege("meta", {...S.db, gc: Date.now()});
+    S.db = await hole("meta", "karten");
+    motorDb = null;
+  } catch (e) {}
+}
+
 async function dbVomPc(d) {
   if (!Array.isArray(d.zeilen) || !d.zeilen.length) return hinweis("Die Datei enthält keine Karten.", 4000);
   dbStatus("Übernehme die Karten vom PC …", 1, 2);
@@ -460,6 +491,7 @@ function zeichneBauen() {
     <div class="feld"><label for="b_name">Name</label><input id="b_name" value="${esc(B.name)}" placeholder="Neuer Cube"></div>
     <div class="feld"><label>Format</label><div class="segmente">${[["commander", "Commander"], ["vintage", "Vintage"]].map(([v, t]) => `<button type="button" data-fmt="${v}" aria-pressed="${B.format === v}">${t}</button>`).join("")}</div></div>
     <div class="feld"><label>Stärke</label><div class="stufen">${STUFEN.map(([v, t, n]) => `<button type="button" data-stufe="${v}" aria-pressed="${B.stufe === v}"><span class="flammen">${[1, 2, 3, 4].map(i => FLAMME.replace("<svg", `<svg class="${i <= n ? "an" : ""}"`)).join("")}</span>${t}</button>`).join("")}</div></div>
+    ${S.db && S.db.quelle !== "pc" && B.stufe !== "vintage" ? `<p class="klein-text">Ohne die Karten vom PC grenzt die Stärke nur Game Changer aus. Draft-Elo und deine Liste „Zu stark“ wirken erst mit „Alle Karten vom PC“.</p>` : ""}
     <div class="zeile"><span>Spieler</span><span class="stepper"><button type="button" data-sp="-1" aria-label="weniger">−</button><output>${B.spieler} · ${B.spieler * 3 * (B.format === "commander" ? 20 : 15)} Karten</output><button type="button" data-sp="1" aria-label="mehr">+</button></span></div>
     <button type="button" class="gross" id="b_los">Cube bauen</button>
     <p class="klein-text" id="b_info">Dauert auf dem iPhone bis zu einer Minute.</p>`);
@@ -777,5 +809,6 @@ if ("serviceWorker" in navigator) {
 }
 await ladeAlles();
 zeichneStart();
+gcNachtragen();
 // Cubes, deren Bilder noch fehlen, im WLAN still weiterladen
 for (const c of S.cubes) if (navigator.onLine && c.bilder && c.bilder.da < c.bilder.gesamt) bilderLaden(c);
