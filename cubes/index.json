@@ -1,0 +1,34 @@
+[
+ {
+  "id": "mein-cube-commander",
+  "datei": "mein-cube-commander.cube.json",
+  "name": "Mein Cube",
+  "format": "commander",
+  "karten": 480,
+  "info": "vom 31.10."
+ },
+ {
+  "id": "mein-cube-vintage",
+  "datei": "mein-cube-vintage.cube.json",
+  "name": "Mein Cube",
+  "format": "vintage",
+  "karten": 480,
+  "info": "vom 6.11."
+ },
+ {
+  "id": "regalia-commander-cube-commander",
+  "datei": "regalia-commander-cube-commander.cube.json",
+  "name": "Regalia Commander Cube",
+  "format": "commander",
+  "karten": 707,
+  "info": "gedruckt"
+ },
+ {
+  "id": "vintage-chaos-clash-vintage",
+  "datei": "vintage-chaos-clash-vintage.cube.json",
+  "name": "Vintage Chaos Clash",
+  "format": "vintage",
+  "karten": 540,
+  "info": "gedruckt"
+ }
+]

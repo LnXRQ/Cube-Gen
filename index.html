@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#03080c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cube Draft">
+<title>Cube Draft</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app">
+  <!-- ======================================================= Start -->
+  <section id="start" class="ansicht" aria-label="Start">
+    <header class="kopf">
+      <div class="logo"><small>Cube</small><b>Generator</b></div>
+      <button type="button" class="rund" id="sync" aria-label="Drafts für den PC sichern" title="Drafts für den PC sichern">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5"/><path d="M12 12v8M9 15l3-3 3 3"/></svg>
+        <span class="marke" id="sync_zahl" hidden>0</span>
+      </button>
+    </header>
+    <h1 class="titel">Draften</h1>
+    <div class="cubes" id="cubes"></div>
+    <button type="button" class="neu-cube" id="cube_laden"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cube laden</button>
+    <div id="laufend"></div>
+    <div class="fuss">
+      <p class="netz" id="netz"></p>
+      <button type="button" class="gross" id="los" disabled>Draft starten</button>
+    </div>
+  </section>
+
+  <!-- ======================================================= Draft -->
+  <section id="draft" class="ansicht" hidden aria-label="Draft">
+    <header class="kopf">
+      <button type="button" class="rund klein" data-zurueck aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+      <div class="pick-titel"><span class="pakete" id="d_pakete"></span><b id="d_pick">Pick 1</b><i id="d_richtung" aria-hidden="true"></i></div>
+      <button type="button" class="chip-knopf" id="d_pool" aria-label="Deine Picks"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="12" height="16" rx="2"/><path d="M5 6v13a2 2 0 0 0 2 2h9"/></svg><span id="d_pool_zahl">0</span></button>
+    </header>
+    <div class="paket" id="d_paket"></div>
+    <div class="aktion">
+      <button type="button" class="leise-knopf" id="d_auto">Bot pickt</button>
+      <button type="button" class="gross" id="d_nehmen" disabled>Karte wählen</button>
+    </div>
+  </section>
+
+  <!-- ======================================================= Deck -->
+  <section id="deck" class="ansicht" hidden aria-label="Deck">
+    <header class="kopf">
+      <button type="button" class="rund klein" data-zurueck aria-label="Zurück"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+      <div class="pick-titel"><b>Deck</b><span class="zaehler" id="k_zahl"></span></div>
+      <button type="button" class="chip-knopf" id="k_bots">Bots</button>
+    </header>
+    <div class="deck-inhalt" id="k_inhalt"></div>
+    <div class="aktion">
+      <button type="button" class="leise-knopf" id="k_vorschlag">Vorschlag</button>
+      <button type="button" class="gross" id="k_fertig">Fertig</button>
+    </div>
+  </section>
+
+  <!-- ======================================================= Bot-Decks -->
+  <section id="bots" class="ansicht" hidden aria-label="Bot-Decks">
+    <header class="kopf">
+      <button type="button" class="rund klein" data-zurueck aria-label="Zurück"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+      <div class="pick-titel"><b>Bot-Decks</b></div>
+      <span class="platz"></span>
+    </header>
+    <div class="deck-inhalt" id="b_inhalt"></div>
+  </section>
+</div>
+
+<!-- Unterseite (Cube laden, Tisch, Pool) -->
+<div class="schleier" id="schleier" hidden></div>
+<div class="blatt" id="blatt" role="dialog" aria-modal="true" hidden><div class="griff" aria-hidden="true"></div><div id="blatt_inhalt"></div></div>
+<div class="zoom" id="zoom" hidden></div>
+<div class="hinweis" id="hinweis" role="status" aria-live="polite" hidden></div>
+<input type="file" id="datei" accept=".json,.txt,.csv,application/json,text/plain,text/csv" hidden>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

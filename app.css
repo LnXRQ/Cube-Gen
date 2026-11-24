@@ -1,0 +1,168 @@
+/* Cube Draft fürs iPhone – gleicher Stil wie der Generator: tiefes Blaugrün, Eis und Glut */
+@font-face{font-family:"Alegreya Sans";font-weight:400;font-display:swap;src:url(fonts/alegreya-sans-400.woff2) format("woff2")}
+@font-face{font-family:"Alegreya Sans";font-weight:700;font-display:swap;src:url(fonts/alegreya-sans-700.woff2) format("woff2")}
+@font-face{font-family:"Alegreya Sans";font-weight:800;font-display:swap;src:url(fonts/alegreya-sans-800.woff2) format("woff2")}
+@font-face{font-family:"Uncial Antiqua";font-weight:400;font-display:swap;src:url(fonts/uncial-antiqua-400.woff2) format("woff2")}
+:root{
+  --abgrund:#03080c; --tiefe:#06171f; --glas:rgba(5,20,27,.78); --dicht:rgba(3,12,17,.94);
+  --eis:#3fe3f2; --eis-hell:#b9f6fb; --eis-matt:rgba(63,227,242,.38); --eis-hauch:rgba(63,227,242,.14);
+  --glut:#ffb547; --glut-hell:#ffd58c; --asche:#8aa3ad; --text:#e6f3f5; --rot:#ff7a64; --gruen:#6fe3a1;
+  --W:#f3e6b8; --U:#4aa8ff; --B:#a77bd1; --R:#ff6a3d; --G:#46c47a; --M:#e8c15a; --C:#b7c3cc; --L:#b08a5a;
+  --zier:"Uncial Antiqua",Georgia,serif; --ui:"Alegreya Sans","Segoe UI",system-ui,sans-serif;
+  --oben:env(safe-area-inset-top,0px); --unten:env(safe-area-inset-bottom,0px);
+  --links:max(16px,env(safe-area-inset-left,0px)); --rechts:max(16px,env(safe-area-inset-right,0px));
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overscroll-behavior:none}
+body{background:radial-gradient(ellipse at 50% 30%,#0d3140 0%,#06171f 55%,var(--abgrund) 100%) fixed,var(--abgrund);
+  color:var(--text);font:17px/1.35 var(--ui);-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--glut);outline-offset:2px}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+#app{height:100%}
+.ansicht{height:100%;display:flex;flex-direction:column;gap:14px;padding:calc(var(--oben) + 14px) var(--rechts) calc(var(--unten) + 16px) var(--links)}
+.kopf{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
+.logo{display:flex;flex-direction:column;line-height:1}
+.logo small{font-size:11px;font-weight:700;letter-spacing:.42em;text-transform:uppercase;color:var(--glut-hell)}
+.logo b{font:400 26px/1.05 var(--zier);color:var(--eis-hell);text-shadow:0 0 14px rgba(63,227,242,.6)}
+.rund{position:relative;width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid rgba(63,227,242,.4);background:var(--glas);color:var(--eis-hell);padding:0}
+.rund.klein{width:44px;height:44px}
+.rund svg{width:22px;height:22px}
+.marke{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;display:grid;place-items:center;background:var(--glut);color:#2a1700;font-size:12px;font-weight:800}
+.titel{margin:6px 0 0;font:400 34px/1.1 var(--zier);color:#fff;text-shadow:0 0 16px rgba(63,227,242,.5)}
+.platz{width:44px}
+
+/* ------------------------------------------------ Cubes */
+.cubes{display:flex;flex-direction:column;gap:12px;overflow-y:auto;min-height:0;padding:2px}
+.cube{display:flex;align-items:center;gap:14px;min-height:76px;padding:12px 14px;border-radius:16px;border:2px solid rgba(63,227,242,.3);background:var(--glas);text-align:left;width:100%}
+.cube[aria-pressed="true"]{border-color:var(--glut);background:rgba(255,181,71,.10)}
+.cube-icon{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:12px;background:rgba(3,12,17,.6);border:1px solid rgba(63,227,242,.35);color:var(--eis-hell)}
+.cube-icon svg{width:24px;height:24px}
+.cube-text{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.cube-text b{font-size:19px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cube-text span{font-size:15px;color:var(--asche)}
+.cube-text .balken{height:4px;border-radius:2px;background:var(--eis-hauch);overflow:hidden;margin-top:4px}
+.cube-text .balken i{display:block;height:100%;background:var(--glut);transition:width .3s}
+.cube-status{flex:none;font-size:13px;color:var(--asche);display:grid;place-items:center}
+.cube-status svg{width:20px;height:20px}
+.cube-status.ok{color:var(--gruen)}
+.cube-mehr{width:36px;height:36px;flex:none;margin-right:-6px;border:0;border-radius:50%;background:transparent;color:var(--asche);display:grid;place-items:center;padding:0}
+.cube-mehr svg{width:22px;height:22px}
+.neu-cube{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:14px;border:1px dashed var(--eis-matt);background:transparent;color:var(--eis-hell);font-size:17px}
+.neu-cube svg{width:20px;height:20px}
+#laufend:empty{display:none}
+.abschnitt{font:700 12px/1 var(--ui);letter-spacing:.16em;text-transform:uppercase;color:var(--asche);margin:6px 2px 8px}
+.drafts{display:flex;flex-direction:column;gap:8px}
+.draft-zeile{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--eis-hauch);background:rgba(3,12,17,.55);text-align:left;width:100%}
+.draft-zeile span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.draft-zeile b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.draft-zeile small{color:var(--asche);font-size:14px}
+.draft-zeile em{font-style:normal;font-size:13px;font-weight:800;color:var(--glut-hell)}
+.draft-zeile .weg{width:36px;height:36px;border-radius:50%;border:0;background:transparent;color:var(--asche);display:grid;place-items:center}
+.draft-zeile .weg svg{width:18px;height:18px}
+.fuss{margin-top:auto;display:flex;flex-direction:column;gap:12px;flex:none}
+.netz{display:flex;align-items:center;justify-content:center;gap:8px;margin:0;font-size:14px;color:var(--asche)}
+.netz svg{width:16px;height:16px}
+.gross{display:flex;align-items:center;justify-content:center;min-height:58px;padding:0 18px;border:0;border-radius:16px;background:linear-gradient(180deg,var(--glut-hell),var(--glut));
+  color:#2a1700;font-size:20px;font-weight:800;box-shadow:0 0 24px rgba(255,181,71,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gross:disabled{opacity:.5;box-shadow:none}
+.leise-knopf{min-height:58px;padding:0 16px;border-radius:16px;border:1px solid var(--eis-matt);background:var(--glas);color:var(--eis-hell);font-size:16px;flex:none}
+
+/* ------------------------------------------------ Draft */
+.pick-titel{display:flex;align-items:center;gap:10px;min-width:0}
+.pick-titel b{font-size:22px;font-weight:800;white-space:nowrap}
+.pick-titel i{font-style:normal;color:var(--eis);font-size:18px}
+.pakete{display:flex;gap:4px}
+.pakete span{width:13px;height:19px;border-radius:3px;border:1px solid rgba(63,227,242,.45)}
+.pakete span.an{background:var(--glut);border-color:var(--glut);box-shadow:0 0 10px rgba(255,181,71,.6)}
+.pakete span.durch{background:rgba(63,227,242,.25)}
+.chip-knopf{display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 12px;border-radius:999px;border:1px solid rgba(63,227,242,.35);background:var(--glas);font-size:17px;font-weight:800;flex:none}
+.chip-knopf svg{width:18px;height:18px;color:var(--eis)}
+.zaehler{font-size:15px;color:var(--asche);font-weight:700}
+.paket{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-content:start;padding:4px 2px 8px}
+.karte{position:relative;width:100%;aspect-ratio:63/88;padding:0;border:0;border-radius:5%/3.6%;background:#0b1d24;overflow:visible;
+  box-shadow:0 6px 14px rgba(0,0,0,.5);transition:transform .15s,box-shadow .15s,opacity .25s;touch-action:manipulation}
+.karte img{position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:inherit;object-fit:cover;pointer-events:none;-webkit-touch-callout:none}
+.karte .ersatz{position:absolute;inset:0;display:flex;flex-direction:column;gap:4px;padding:7px;border-radius:inherit;border:1px solid var(--eis-matt);font-size:12px;text-align:left;overflow:hidden;background:linear-gradient(160deg,#10303c,#071820)}
+.karte .ersatz b{font-size:12.5px;line-height:1.15}
+.karte .ersatz small{color:var(--asche);font-size:10.5px}
+.karte.an{transform:translateY(-4px) scale(1.03);box-shadow:0 0 0 3px var(--glut),0 0 24px rgba(255,181,71,.6)}
+.karte.weg{transform:translateY(40vh) scale(.3);opacity:0}
+.karte .nr{position:absolute;left:6px;top:6px;min-width:22px;height:22px;border-radius:11px;display:grid;place-items:center;background:var(--glut);color:#2a1700;font-size:12px;font-weight:800}
+.foil{position:absolute;inset:0;pointer-events:none;border-radius:inherit;mix-blend-mode:color-dodge;opacity:.8;
+  background:linear-gradient(115deg,transparent 15%,rgba(255,92,205,.5) 30%,rgba(92,240,255,.5) 42%,rgba(255,240,120,.5) 54%,rgba(120,255,170,.45) 64%,transparent 80%);
+  background-size:300% 300%;animation:foil 3s linear infinite}
+@keyframes foil{0%{background-position:100% 0}100%{background-position:0 100%}}
+.stern{position:absolute;top:-6px;right:-6px;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--glut);color:#2a1700;box-shadow:0 0 12px rgba(255,181,71,.8);pointer-events:none}
+.stern svg{width:13px;height:13px;fill:currentColor;stroke:none}
+.aktion{display:flex;gap:10px;flex:none}
+.aktion .gross{flex:1}
+
+/* ------------------------------------------------ Deck */
+.deck-inhalt{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding:2px 2px 8px}
+.raster{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.raster .karte{box-shadow:0 3px 8px rgba(0,0,0,.5)}
+.raster .karte.aus{opacity:.38}
+.krone{position:absolute;right:-5px;bottom:-5px;width:26px;height:26px;border-radius:50%;border:1px solid var(--glut);background:var(--dicht);color:var(--glut-hell);display:grid;place-items:center;font-size:14px;line-height:1}
+.krone.an{background:var(--glut);color:#2a1700}
+.basics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.basic{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px;border-radius:12px;border:1px solid var(--eis-hauch);background:rgba(3,12,17,.55)}
+.basic i{width:14px;height:14px;border-radius:50%}
+.basic b{font-size:20px;font-weight:800}
+.basic div{display:flex;gap:6px}
+.basic button{width:32px;height:32px;border-radius:50%;border:1px solid var(--eis-matt);background:rgba(63,227,242,.08);color:var(--eis);font-size:18px;line-height:1;padding:0}
+.kurve{display:flex;align-items:flex-end;gap:6px;height:56px}
+.kurve div{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:var(--asche)}
+.kurve i{display:block;width:70%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--eis),rgba(63,227,242,.3))}
+.bot{border:1px solid var(--eis-hauch);border-radius:14px;padding:12px;background:rgba(3,12,17,.55)}
+.bot h3{margin:0;display:flex;align-items:center;gap:8px;font-size:17px}
+.bot p{margin:4px 0 0;color:var(--asche);font-size:14px}
+.bot ul{margin:8px 0 0;padding:0;list-style:none;columns:2;column-gap:12px;font-size:14px}
+.bot li{break-inside:avoid;padding:1px 0}
+.pips{display:inline-flex;gap:3px}
+.pips i{width:11px;height:11px;border-radius:50%}
+
+/* ------------------------------------------------ Unterseite */
+.schleier{position:fixed;inset:0;background:rgba(1,5,8,.66);z-index:20}
+.blatt{position:fixed;left:0;right:0;bottom:0;z-index:21;max-height:88vh;display:flex;flex-direction:column;gap:12px;
+  padding:8px var(--rechts) calc(var(--unten) + 18px) var(--links);border-radius:22px 22px 0 0;border-top:1px solid var(--eis-matt);
+  background:linear-gradient(180deg,#0b2730,#050f14);box-shadow:0 -12px 40px rgba(0,0,0,.6);animation:hoch .25s ease-out}
+@keyframes hoch{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.griff{width:42px;height:5px;border-radius:3px;background:var(--eis-matt);margin:0 auto 4px;flex:none}
+#blatt_inhalt{overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:14px}
+.blatt h2{margin:0;font:400 24px/1.1 var(--zier);color:#fff}
+.blatt .zeile{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:6px 6px 6px 14px;border-radius:12px;border:1px solid var(--eis-hauch);background:rgba(3,12,17,.6)}
+.blatt .zeile>span{font-weight:700}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:40px;height:40px;border-radius:50%;border:1px solid var(--eis-matt);background:rgba(63,227,242,.08);color:var(--eis);font-size:22px;line-height:1;padding:0}
+.stepper output{min-width:76px;text-align:center;font-weight:800}
+.quelle{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--eis-matt);background:rgba(3,12,17,.6);text-align:left;width:100%}
+.quelle svg{width:24px;height:24px;flex:none;color:var(--eis-hell)}
+.quelle span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.quelle small{color:var(--asche);font-size:14px}
+.quelle[disabled]{opacity:.5}
+.feld{display:flex;flex-direction:column;gap:6px}
+.feld label{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--asche)}
+.feld input,.feld select{min-height:48px;border-radius:12px;border:1px solid var(--eis-matt);background:rgba(0,0,0,.35);color:var(--text);padding:0 12px;font:inherit;-webkit-user-select:text;user-select:text}
+.segmente{display:flex;gap:8px}
+.segmente button{flex:1;min-height:46px;border-radius:12px;border:1px solid var(--eis-matt);background:rgba(3,12,17,.6)}
+.segmente button[aria-pressed="true"]{border-color:var(--glut);background:rgba(255,181,71,.14);color:var(--glut-hell)}
+.klein-text{margin:0;color:var(--asche);font-size:14px}
+.fehler-text{margin:0;color:var(--rot);font-size:15px}
+.pool-kopf{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--asche);font-size:15px}
+
+.zoom{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:calc(var(--oben) + 20px) var(--rechts) calc(var(--unten) + 20px) var(--links);background:rgba(1,5,8,.88)}
+.zoom-karte{position:relative;width:min(86vw,380px);aspect-ratio:63/88;border-radius:4.75%/3.5%;box-shadow:0 20px 50px rgba(0,0,0,.7);overflow:hidden}
+.zoom.zwei .zoom-karte{width:min(44vw,300px)}
+.zoom-karte img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.zoom .ersatz-gross{position:absolute;inset:0;display:flex;flex-direction:column;gap:8px;padding:18px;background:linear-gradient(160deg,#10303c,#071820);border:1px solid var(--eis-matt);border-radius:inherit;font-size:16px;overflow:auto}
+.hinweis{position:fixed;left:50%;bottom:calc(var(--unten) + 92px);transform:translateX(-50%);z-index:40;max-width:calc(100% - 32px);padding:11px 16px;border-radius:14px;
+  background:var(--dicht);border:1px solid var(--eis-matt);box-shadow:0 10px 30px rgba(0,0,0,.6);font-size:15px;text-align:center}
+.lade{display:grid;place-items:center;gap:10px;padding:30px 0;color:var(--asche)}
+.lade i{width:34px;height:34px;border-radius:50%;border:3px solid var(--eis-hauch);border-top-color:var(--eis);animation:dreh 1s linear infinite}
+@keyframes dreh{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.foil,.lade i{animation:none}.blatt{animation:none}.karte{transition:none}}
+@media (min-width:700px){.paket{grid-template-columns:repeat(5,minmax(0,1fr))}.raster{grid-template-columns:repeat(6,minmax(0,1fr))}#app{max-width:1000px;margin:0 auto}}
