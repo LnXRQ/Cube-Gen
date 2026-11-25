@@ -792,8 +792,10 @@ $("#sync").onclick = async () => {
   const inhalt = JSON.stringify({art: "cubegen-drafts", v: 1, zeit: jetzt.getTime() / 1000, drafts: liste.map(d => JSON.parse(d.z))});
   const datei = new File([inhalt], `Drafts ${stempel}.drafts.json`, {type: "application/json"});
   const box = blatt(`<h2>Drafts zum PC</h2>
-    <p class="klein-text">${liste.length} Draft${liste.length === 1 ? "" : "s"}. Sichere die Datei in OneDrive unter <b>Desktop › Cube Gen › handy</b>.
-      Beim nächsten Start liest der Generator sie ein, und deine Picks fließen in die Kartenbewertung.</p>
+    <p class="klein-text">${liste.length} Draft${liste.length === 1 ? "" : "s"}. Sichere die Datei in OneDrive unter <b>Desktop › Cube Gen › handy</b>
+      – meist schlägt iOS den Ordner vom letzten Mal schon vor.</p>
+    <p class="klein-text">Läuft der Generator am PC, übernimmt er die Drafts von selbst, sobald OneDrive die Datei dort hat (meist unter einer Minute).
+      Sonst beim nächsten Start. Deine Picks fließen dann in die Kartenbewertung.</p>
     <button type="button" class="gross" id="s_teilen">In Dateien sichern</button>`);
   box.querySelector("#s_teilen").onclick = async () => {
     let ok = false;
